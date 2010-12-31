@@ -25,7 +25,7 @@ document.getElementById("change-btn").addEventListener("click",function() {
         .then(function(r) {return r.json();})
         .then(function(data) {
             if (data.result==="ok") {
-                message.textContent="Пароль изменён.";
+                message.textContent="Пароль изменён. Войдите заново.";
                 clearSession();
                 setTimeout(function() {location.href="index.html";},1500);
             } else {

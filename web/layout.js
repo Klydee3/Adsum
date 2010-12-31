@@ -38,12 +38,13 @@ function clearSession() {
     months[now.getMonth()]+" "+now.getFullYear()+
     ', <span id="greet-time">'+two(hour)+":"+two(now.getMinutes())+"</span></span>"+
     '<span class="greet-text">'+greet+"</span>";
+	document.body.classList.toggle("guest",!token);
 	const rail=document.createElement("div");
 	rail.id="side-rail";
 	rail.innerHTML=
 		(token
-			?'<button class="side-icon" id="rail-person" title="Кабинет">☺</button>' +
-			 '<button class="side-icon" id="rail-tools" title="Инструменты">☰</button>' +
+			?'<button class="side-icon" id="rail-tools" title="Инструменты">☰</button>' +
+			 '<button class="side-icon" id="rail-person" title="Кабинет">☺</button>' +
 			 '<button class="side-icon" id="rail-gear" title="Настройки">⚙</button>'
 			:'') 
     const panel=document.createElement("div");
@@ -95,10 +96,14 @@ function clearSession() {
 			location.href="/index.html";
 		});
 	}
-	document.getElementById("rail-gear").addEventListener("click",function(){
-		closePanel();
-		location.href=token?"/settings.html":"/index.html";
-	});
+	const gearBtn=document.getElementById("rail-gear");
+	if(gearBtn){
+		gearBtn.addEventListener("click",function(){
+			closePanel();
+			location.href="/settings.html";
+		});
+	}
+	panel.addEventListener("click",closePanel);
     document.addEventListener("click",function(e) {
         if (!panel.classList.contains("open")) {
             return;

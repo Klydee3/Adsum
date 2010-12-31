@@ -317,6 +317,54 @@ public class AdsumServer {
             sendJson(exchange,"{\"result\":\"ok\",\"name\":\""+esc(key)+"\"}");
         }
     }
+    // Защита от подбора пароля: 5 неверных попыток -> блокировка входа для логина на 1 минуту
+    static final int MAX_LOGIN_ATTEMPTS=5;
+    static final long LOGIN_LOCK_MS=60_000;
+    static final long LOGIN_IDLE_RESET_MS=10*60_000;
+    static class LoginAttempt {
+        int fails;
+        long lastFail;
+        long lockedUntil;
+    }
+    static final Map<String,LoginAttempt> loginAttempts=new HashMap<>();
+    static String attemptKey(String login) {
+        return login.length()>200?login.substring(0,200):login;
+    }
+    // Сколько секунд ещё действует блокировка (0 - вход разрешён)
+    static synchronized long loginLockSeconds(String login) {
+        String key=attemptKey(login);
+        LoginAttempt a=loginAttempts.get(key);
+        if(a==null||a.lockedUntil==0) {
+            return 0;
+        }
+        long left=a.lockedUntil-System.currentTimeMillis();
+        if(left>0) {
+            return (left+999)/1000;
+        }
+        loginAttempts.remove(key);
+        return 0;
+    }
+    // Записывает неудачную попытку, возвращает сколько попыток осталось (0 - логин заблокирован)
+    static synchronized int registerLoginFailure(String login) {
+        long now=System.currentTimeMillis();
+        if(loginAttempts.size()>10000) {
+            loginAttempts.values().removeIf(x->x.lockedUntil<now&&now-x.lastFail>LOGIN_IDLE_RESET_MS);
+        }
+        LoginAttempt a=loginAttempts.computeIfAbsent(attemptKey(login),k->new LoginAttempt());
+        if(a.fails>0&&now-a.lastFail>LOGIN_IDLE_RESET_MS) {
+            a.fails=0;
+        }
+        a.fails++;
+        a.lastFail=now;
+        if(a.fails>=MAX_LOGIN_ATTEMPTS) {
+            a.lockedUntil=now+LOGIN_LOCK_MS;
+            return 0;
+        }
+        return MAX_LOGIN_ATTEMPTS-a.fails;
+    }
+    static synchronized void clearLoginFailures(String login) {
+        loginAttempts.remove(attemptKey(login));
+    }
     static class LoginHandler implements HttpHandler {
         public void handle(HttpExchange exchange) throws IOException {
             if(!"POST".equals(exchange.getRequestMethod())) {
@@ -330,11 +378,22 @@ public class AdsumServer {
                 sendJson(exchange,err("нужны логин и пароль"));
                 return;
             }
-            Account account=Adsum.accounts.get(login);
-            if (account==null||!Adsum.hashPassword(password,account.getSalt()).equals(account.getPasswordHash())) {
-                sendJson(exchange,err("неверный логин или пароль"));
+            long wait=loginLockSeconds(login);
+            if(wait>0) {
+                sendJson(exchange,429,err("Слишком много неверных попыток. Повторите через "+wait+" сек."));
                 return;
             }
+            Account account=Adsum.accounts.get(login);
+            if (account==null||!Adsum.hashPassword(password,account.getSalt()).equals(account.getPasswordHash())) {
+                int left=registerLoginFailure(login);
+                if(left==0) {
+                    sendJson(exchange,429,err("Слишком много неверных попыток. Вход заблокирован на "+(LOGIN_LOCK_MS/1000)+" сек."));
+                } else {
+                    sendJson(exchange,err("неверный логин или пароль. Осталось попыток: "+left));
+                }
+                return;
+            }
+            clearLoginFailures(login);
             if(!account.isApproved()) {
                 sendJson(exchange,err("Аккаунт ещё не подтверждён администрацией"));
                 return;

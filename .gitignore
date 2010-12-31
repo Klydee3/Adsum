@@ -1,5 +1,6 @@
 *.class
 build/
-.vscode/ 
-.idea/ 
+.vscode/
+.idea/
 *.tmp
+*.bak

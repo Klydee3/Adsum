@@ -21,7 +21,7 @@ if (!token||role==="STUDENT") {
 function two(n) {return n<10?"0"+n:""+n;}
 const now=new Date();
 const dateInput=document.getElementById("summary-date");
-dateInput.value=now.getFullYear()+"-"+two(now.getMonth()+1)+"-"+two(now.getDate());
+dateInput.value=new URLSearchParams(location.search).get("date")||now.getFullYear()+"-"+two(now.getMonth()+1)+"-"+two(now.getDate());
 let lastData=null;
 function loadSummary() {
     fetch("/api/summary?date="+dateInput.value, {

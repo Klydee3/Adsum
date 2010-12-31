@@ -11,16 +11,18 @@
 		<h1>Утренняя сводка</h1>
 		<div>
 			<input class="btn date-choise" type="date" id="summary-date">
-			<button class="btn "id="show-btn">Показать</button>
-			<button class="btn" id="csv-btn">Скачать CSV</button>
-			<button class="btn" id="reasons-btn">Причины отсутствующих</button>
+			<button class="btn summary-btns" id="show-btn">Показать</button>
+			<button class="btn summary-btns" id="csv-btn">Скачать CSV</button>
+			<button class="btn summary-btns" id="reasons-btn">Причины отсутствующих</button>
 		</div>
+		<div class="table-wrap">
 		<table id="summary-table">
 			<thead>
 				<tr><th>Класс</th><th>Всего</th><th>Пришло</th><th>Не пришло</th><th>Не отметилось</th><th>Процент</th></tr>
 			</thead>
 			<tbody></tbody>
 		</table>
+		</div>
 		<p id="summary-total"></p>
 		<p id="message"></p>
 		<button class="btn" id="back-btn">Назад</button>

@@ -1,4 +1,4 @@
-if(!localStorage.getItem("token")||(localStorage.getItem("role")!=="MAIN_DEVELOPER"&&localStorage.getItem("role")!=="ADMIN")){
+if(!localStorage.getItem("token")||localStorage.getItem("role")!=="MAIN_DEVELOPER"){//if(!localStorage.getItem("token")||(localStorage.getItem("role")!=="MAIN_DEVELOPER"&&localStorage.getItem("role")!=="ADMIN")){ --- If mainDev does not exist
     location.href="/index.html";
 }
 const messageBox=document.getElementById("message");

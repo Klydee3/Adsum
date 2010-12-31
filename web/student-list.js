@@ -27,14 +27,17 @@ function loadAll() {
             delBtn.className="btn btn-no";
             delBtn.textContent="Удалить";
             delBtn.addEventListener("click",function() {removeStudent(s);});
+            label.appendChild(delBtn);
             row.appendChild(label);
-            row.appendChild(delBtn);
             list.appendChild(row);
         });
     })
     .catch(function() {message.textContent="Сервер не доступен";});
 }
 function removeStudent(student) {
+    if(!confirm("Удалить ученика «"+student.surname+" "+student.name+"»? Аккаунт будет удалён без возможности восстановления.")) {
+        return;
+    }
     fetch("/api/delete-student?name="+encodeURIComponent(student.name)+"&surname="+encodeURIComponent(student.surname),
     {method:"POST",
 	headers:{"Authorization":"Bearer "+token}})

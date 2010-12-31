@@ -5,6 +5,7 @@ public class Account {
     private String passwordHash;
 	private boolean approved;
 	private String school="";
+	private String className="";
     public Account(String login,Role role,String salt,String passwordHash) {
         this.login=login;
         this.role=role;
@@ -21,4 +22,6 @@ public class Account {
 	public void setApproved(boolean approved){this.approved=approved;}
 	public String getSchool(){return school;}
 	public void setSchool(String school){this.school=school==null?"":school;}
+	public String getClassName(){return className;}
+	public void setClassName(String className){this.className=className==null?"":className;}
 }

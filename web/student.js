@@ -23,7 +23,8 @@ function attend(answer,reason){
     .then(function(data){
         if(data.result==="ok"){
             message.textContent="Отметка сохранена.";
-            setTimeout(function(){location.href="/student.html";},2000);
+            document.getElementById("btn-yes").disabled=true;
+            document.getElementById("btn-no").disabled=true;
         }else{
             message.textContent=data.message;
         }

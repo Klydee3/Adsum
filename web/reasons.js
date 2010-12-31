@@ -25,5 +25,5 @@ fetch("/api/summary?date="+encodeURIComponent(date),{headers:{"Authorization":"B
 })
 .catch(function(){document.getElementById("message").textContent="Сервер недоступен";});
 document.getElementById("back-btn").addEventListener("click",function(){
-    location.href="/summary.html";
+    location.href="/summary.html?date="+encodeURIComponent(date);
 });

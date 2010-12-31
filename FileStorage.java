@@ -21,20 +21,6 @@ public class FileStorage {
             java.nio.file.Files.move(tmp,target,java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         }
     }
-    public static void saveStudents(ArrayList<Student> students,String fileName) {
-        StringBuilder sb=new StringBuilder();
-        for (Student s:students) {
-            sb.append(s.getSurname()).append(":").append(s.getName()).append(":")
-              .append(s.getClassName()).append(":").append(s.getStatus()).append(":")
-              .append(s.getSchool()).append("\n");
-        }
-        try {
-            writeAtomic(fileName,sb.toString());
-            System.out.println("Сохранено в файл "+fileName);
-        } catch (IOException e) {
-            System.out.println("Ошибка записи: "+e.getMessage());
-        }
-    }
     public static ArrayList<Student> loadStudents(String fileName) {
         ArrayList<Student> students=new ArrayList<>();
         java.io.File file=new java.io.File(fileName);
@@ -94,7 +80,7 @@ public class FileStorage {
                 if(line.trim().isEmpty()) {
                     continue;
                 }
-                String[] parts=line.split(":",6);
+                String[] parts=line.split(":",7);
                 if (parts.length<4) {
                     continue;
                 }
@@ -102,8 +88,12 @@ public class FileStorage {
                     Account acc=new Account(parts[0],Role.valueOf(parts[1]),parts[2],parts[3]);
                     String st=parts.length>4?parts[4].trim():"APPROVED";
                     acc.setApproved(st.startsWith("APPROVED"));
-                    String school=parts.length>5?parts[5].trim():st.replaceFirst("^(APPROVED|PENDING)","").trim();
-                    acc.setSchool(school);
+                    if(parts.length>=7) {
+                        acc.setClassName(parts[5].trim());
+                        acc.setSchool(parts[6].trim());
+                    } else {
+                        acc.setSchool(parts.length>5?parts[5].trim():st.replaceFirst("^(APPROVED|PENDING)","").trim());
+                    }
                     result.add(acc);
                 } catch (IllegalArgumentException e) {
                     System.out.println("Пропуск строки в accounts.txt (неизвестная роль): "+parts[0]);
@@ -122,6 +112,7 @@ public class FileStorage {
               .append(":").append(a.getSalt())
               .append(":").append(a.getPasswordHash())
               .append(":").append(a.isApproved()?"APPROVED":"PENDING")
+              .append(":").append(a.getClassName())
               .append(":").append(a.getSchool()).append("\n");
         }
         try {
