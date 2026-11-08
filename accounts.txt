@@ -1,0 +1,5 @@
+teacher:TEACHER:HJvrZKBz9UeJGllq1sEDhA==:aX+w4AXF72ZB5OT1zItEcPag2LHQ73ANZbe7kFg91pw=:APPROVED:ГУО «Новосамотевичская средняя школа Костюковичского района»
+cafe:CAFETERIA:281MX/iikY6qzi+yFcjj2w==:6NQMh/E8Tk6zv47/b96FCKqIHsGybK9+xwvrjHt/PVc=:APPROVED:ГУО «Новосамотевичская средняя школа Костюковичского района»
+maindev:MAIN_DEVELOPER:MPeNsZlm1mXZGlqeDI88hQ==:DWrKBSYYhSSYm9uwIxN3Cleo2KIJpT26eOVEhD1Dprg=:APPROVED:
+Смолькин Илья:STUDENT:NUT6IWOE3HLzs/eokCwMvw==:0ZntjSZnpBgP/hJ/rijTme6PGWjImO2CSU5SgDC3EoU=:APPROVED:ГУО «Новосамотевичская средняя школа Костюковичского района»
+admin:ADMIN:z8IBiMZtRs3oBQid7xE7Tw==:5JVCk/HZpoxxAL4WwKEsYorH69UswtBaFEr2cDnqbps=:APPROVED:ГУО «Новосамотевичская средняя школа Костюковичского района»
