@@ -234,7 +234,8 @@ public class AdsumServer {
     static class PageHandler implements HttpHandler {
         public void handle(HttpExchange exchange) throws IOException {
             String path=exchange.getRequestURI().getPath();
-            if(path.equals("/")) {
+            if(path.equals("/")||path.endsWith(".html")) {
+                // Все страницы объединены в один файл index.html, выбор страницы делает pages.js по адресу
                 path="/index.html";
             }
             File root=new File("web").getCanonicalFile();
@@ -868,6 +869,218 @@ public class AdsumServer {
             sendJson(exchange,"{\"result\":\"ok\",\"message\":\"Аккаунт Главного Разработчика успешно создан!\"}");
         }
     }
+    static boolean isCafeteriaStaff(Account a) {
+        return a.getRole()==Role.CAFETERIA||a.getRole()==Role.MAIN_DEVELOPER;
+    }
+    // Школа, в рамках которой работает сотрудник столовой: своя, а у главного разработчика - выбранная из списка
+    static String menuSchool(Account account,Map<String,String> params) {
+        if(account.getRole()==Role.MAIN_DEVELOPER) {
+            String school=param(params,"school");
+            return FileStorage.loadSchoolNames("schoolsList.txt").contains(school)?school:"";
+        }
+        return account.getSchool();
+    }
+    static String complexesJson(java.util.List<Complex> list) {
+        StringBuilder sb=new StringBuilder("[");
+        for(int i=0;i<list.size();i++) {
+            if(i>0) {
+                sb.append(",");
+            }
+            sb.append(list.get(i).toJson());
+        }
+        return sb.append("]").toString();
+    }
+    static boolean validDate(String date) {
+        if(!date.matches("\\d{4}-\\d{2}-\\d{2}")) {
+            return false;
+        }
+        try {
+            java.time.LocalDate.parse(date);
+            return true;
+        } catch(Exception e) {
+            return false;
+        }
+    }
+    static class ComplexesHandler implements HttpHandler {
+        public void handle(HttpExchange exchange) throws IOException {
+            Account account=requireAuth(exchange);
+            if(account==null) {
+                return;
+            }
+            if(!isCafeteriaStaff(account)) {
+                sendJson(exchange,403,err("нет доступа"));
+                return;
+            }
+            String school=menuSchool(account,parseQuery(exchange));
+            if(school.isEmpty()) {
+                sendJson(exchange,err("не указана школа"));
+                return;
+            }
+            sendJson(exchange,"{\"result\":\"ok\",\"complexes\":"+complexesJson(Menu.complexesOf(school))+"}");
+        }
+    }
+    static class ComplexSaveHandler implements HttpHandler {
+        public void handle(HttpExchange exchange) throws IOException {
+            if(!requirePost(exchange)) {
+                return;
+            }
+            Account account=requireAuth(exchange);
+            if(account==null) {
+                return;
+            }
+            if(!isCafeteriaStaff(account)) {
+                sendJson(exchange,403,err("нет доступа"));
+                return;
+            }
+            Map<String,String> params=parseBody(exchange);
+            String school=menuSchool(account,params);
+            if(school.isEmpty()) {
+                sendJson(exchange,err("не указана школа"));
+                return;
+            }
+            String name=param(params,"name");
+            if(!Menu.cleanText(name,60)) {
+                sendJson(exchange,err("укажите название комплекса (до 60 символов, без символа |)"));
+                return;
+            }
+            java.util.List<String> dishes=new ArrayList<>();
+            for(String d:param(params,"dishes").split("\\r?\\n")) {
+                d=d.trim();
+                if(d.isEmpty()) {
+                    continue;
+                }
+                if(!Menu.cleanText(d,80)) {
+                    sendJson(exchange,err("название блюда: до 80 символов, без символа |"));
+                    return;
+                }
+                dishes.add(d);
+            }
+            if(dishes.isEmpty()||dishes.size()>15) {
+                sendJson(exchange,err("добавьте от 1 до 15 блюд (каждое с новой строки)"));
+                return;
+            }
+            for(Complex c:Menu.complexesOf(school)) {
+                if(c.name.equalsIgnoreCase(name)) {
+                    sendJson(exchange,err("комплекс с таким названием уже есть"));
+                    return;
+                }
+            }
+            Complex c=Menu.add(school,name,dishes);
+            sendJson(exchange,"{\"result\":\"ok\",\"complex\":"+c.toJson()+"}");
+        }
+    }
+    static class ComplexDeleteHandler implements HttpHandler {
+        public void handle(HttpExchange exchange) throws IOException {
+            if(!requirePost(exchange)) {
+                return;
+            }
+            Account account=requireAuth(exchange);
+            if(account==null) {
+                return;
+            }
+            if(!isCafeteriaStaff(account)) {
+                sendJson(exchange,403,err("нет доступа"));
+                return;
+            }
+            Map<String,String> params=parseBody(exchange);
+            String school=menuSchool(account,params);
+            int id;
+            try {
+                id=Integer.parseInt(param(params,"id"));
+            } catch(NumberFormatException e) {
+                sendJson(exchange,err("некорректный комплекс"));
+                return;
+            }
+            if(school.isEmpty()||!Menu.delete(id,school)) {
+                sendJson(exchange,404,err("комплекс не найден"));
+                return;
+            }
+            sendJson(exchange,"{\"result\":\"ok\"}");
+        }
+    }
+    static class MenuSetHandler implements HttpHandler {
+        public void handle(HttpExchange exchange) throws IOException {
+            if(!requirePost(exchange)) {
+                return;
+            }
+            Account account=requireAuth(exchange);
+            if(account==null) {
+                return;
+            }
+            if(!isCafeteriaStaff(account)) {
+                sendJson(exchange,403,err("нет доступа"));
+                return;
+            }
+            Map<String,String> params=parseBody(exchange);
+            String school=menuSchool(account,params);
+            if(school.isEmpty()) {
+                sendJson(exchange,err("не указана школа"));
+                return;
+            }
+            String date=param(params,"date");
+            if(!validDate(date)) {
+                sendJson(exchange,err("некорректная дата"));
+                return;
+            }
+            java.util.List<Integer> ids=new ArrayList<>();
+            for(String s:param(params,"ids").split(",")) {
+                if(s.trim().isEmpty()) {
+                    continue;
+                }
+                int id;
+                try {
+                    id=Integer.parseInt(s.trim());
+                } catch(NumberFormatException e) {
+                    sendJson(exchange,err("некорректный комплекс"));
+                    return;
+                }
+                if(Menu.find(id,school)==null) {
+                    sendJson(exchange,403,err("комплекс принадлежит другой школе или не существует"));
+                    return;
+                }
+                if(!ids.contains(id)) {
+                    ids.add(id);
+                }
+            }
+            Menu.setDay(date,school,ids);
+            sendJson(exchange,"{\"result\":\"ok\"}");
+        }
+    }
+    // Просмотр меню на день. Меню отдаётся только в ту школу, которая его поставила:
+    // школа берётся из аккаунта смотрящего, а не из запроса. Исключение - главный разработчик.
+    static class MenuViewHandler implements HttpHandler {
+        public void handle(HttpExchange exchange) throws IOException {
+            Account account=requireAuth(exchange);
+            if(account==null) {
+                return;
+            }
+            Map<String,String> params=parseQuery(exchange);
+            String date=param(params,"date");
+            if(date.isEmpty()) {
+                date=java.time.LocalDate.now().toString();
+            }
+            if(!validDate(date)) {
+                sendJson(exchange,err("некорректная дата"));
+                return;
+            }
+            String school=account.getSchool();
+            if(account.getRole()==Role.MAIN_DEVELOPER) {
+                school=param(params,"school");
+            } else {
+                String asked=param(params,"school");
+                if(!asked.isEmpty()&&!asked.equals(school)) {
+                    sendJson(exchange,403,err("меню другой школы недоступно"));
+                    return;
+                }
+            }
+            if(school.isEmpty()) {
+                sendJson(exchange,err("у вашего аккаунта не указана школа"));
+                return;
+            }
+            sendJson(exchange,"{\"result\":\"ok\",\"date\":\""+esc(date)+"\",\"school\":\""+esc(school)
+                +"\",\"complexes\":"+complexesJson(Menu.menuFor(date,school))+"}");
+        }
+    }
     static void route(HttpServer server,String path,HttpHandler handler) {
         server.createContext(path,exchange->{
             try {
@@ -885,6 +1098,7 @@ public class AdsumServer {
     }
     public static void main(String[] args) throws IOException {
         Adsum.loadRegistry();
+        Menu.load();
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
         route(server,"/api/students",new StudentsHandler());
         route(server,"/api/schools",new SchoolsHandler());
@@ -906,6 +1120,11 @@ public class AdsumServer {
         route(server,"/api/teachers-list",new TeachersListHandler());
         route(server,"/api/assign-class",new AssignClassHandler());
         route(server,"/api/reg-dev",new RegDevHandler());
+        route(server,"/api/complexes",new ComplexesHandler());
+        route(server,"/api/complex-save",new ComplexSaveHandler());
+        route(server,"/api/complex-delete",new ComplexDeleteHandler());
+        route(server,"/api/menu-set",new MenuSetHandler());
+        route(server,"/api/menu",new MenuViewHandler());
         server.start();
         System.out.println("Сервер запущен на порту 8080!");
     }

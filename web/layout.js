@@ -54,6 +54,7 @@ function clearSession() {
         links+='<a href="/index.html">Вход</a>';
         links+='<a href="/reg-page.html">Регистрация</a>';
     }else{
+		links+='<a href="/menu.html">Школьное меню</a>';
 		if(role==="MAIN_DEVELOPER"){
 			links+='<a href="/student-list.html">Список учеников</a>';
 			links+='<a href="/register-student.html">Регистрация ученика</a>';

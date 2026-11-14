@@ -1,5 +1,9 @@
+Лебедев Матвей:STUDENT:tbPWIENt+lKC1ocx2PLxJA==:iLkyNMH4OCbxAMMMufc+6Cf/rHbsY3JRhh8ZL01fZcs=:APPROVED:9:ГУО «Новосамотевичская средняя школа Костюковичского района»
 cafe:CAFETERIA:kFnx3Rz1NGCBvw3oWcM3pA==:aGxo9Ozv68I9EESm4U/arzEjTvY7ot3PVxB/UCviokQ=:APPROVED::ГУО «Новосамотевичская средняя школа Костюковичского района»
 teacher:TEACHER:UeATnrIxKTwlE7MR1GxqdA==:DW7BcvirgI99izDrhzscF6g8qCPGGhOaJ/FGFP1krp4=:APPROVED:10:ГУО «Новосамотевичская средняя школа Костюковичского района»
+Луковский Арсений:STUDENT:FKQ2J837KXQp1qMucWeYyA==:lml8KIaRjT3wOSWHsONo3gi/aWbca1UIqsHm9yAzg4s=:APPROVED:10:ГУО «Новосамотевичская средняя школа Костюковичского района»
 maindev:MAIN_DEVELOPER:LMCCugUE7eDPmvTY8SNt8w==:klYgXRZ1tay9eRI4gJ8SAcEW1Q7J50a8aFXb0nPQL1U=:APPROVED::
 Смолькин Илья:STUDENT:hbIJPROD1P8KEVO4HLpY2Q==:4tEBuKNLzeaUPI4J2iSR1CPqVVk6qIXuj3OZZW0aGw8=:APPROVED:10:ГУО «Новосамотевичская средняя школа Костюковичского района»
+Запрутин Мартын:STUDENT:E3ea3KWwF98bc/gW8LLc4Q==:BrgwvjFCn3SlV7VazwvjHPeblFum0unpMVOV3QSOKiU=:APPROVED:10:ГУО «Новосамотевичская средняя школа Костюковичского района»
 admin:ADMIN:PTDJlMRLRoXT13djCgpa/Q==:0QLDCqslf0koQhGg2J0fNrvTL1Gq0mWbiFTVagGxFGw=:APPROVED::ГУО «Новосамотевичская средняя школа Костюковичского района»
+Сичкаренко Василиса:STUDENT:Ghs8MzzZglyWNsti45GikQ==:Ta8X7o1eZzjpJ5G+b+nBRSc8EYl72SXJSUYKN2t5qcA=:APPROVED:10:ГУО «Новосамотевичская средняя школа Костюковичского района»

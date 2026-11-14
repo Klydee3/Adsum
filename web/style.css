@@ -271,44 +271,43 @@ body.guest #side-panel {
     display: none;
 }
 
-/* Выбор школьного меню и таблицы */
-.select-complex {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
-    gap: 32px;
-    width: 75%;
-    max-width: 1300px;
-	margin-top:10px;
-}
-
-.complex-bubble {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+/* Школьное меню */
+textarea {
     width: 100%;
-    min-height: 280px;
-    margin: 18px 0;
-    padding: 40px 24px;
-    border: 2px solid #7a8ba0;
-    border-radius: 28px;
-    background: #ede3cf;
-    text-align: center;
+    max-width: 360px;
+    margin-top: 4px;
+    padding: 10px 12px;
+    border: 1px solid #b8c5d9;
+    border-radius: 12px;
+    background-color: #ffffff;
+    color: #24344d;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    resize: vertical;
 }
 
-.complex-bubble p {
-    margin: 0 0 26px;
-    font-size: 26px;
-    font-weight: bold;
+.complex-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 8px 0;
+    padding: 8px;
+    border: 1px solid #7a8ba0;
+    border-radius: 12px;
+    text-align: left;
 }
 
-.complex-bubble .btn {
-    min-width: 220px;
-    min-height: 68px;
-    padding: 16px 36px;
-    border-radius: 34px;
-    font-size: 26px;
+.complex-row input[type=checkbox] {
+    width: 22px;
+    min-height: 22px;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.complex-info {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .table-wrap {
@@ -382,26 +381,9 @@ body.guest #side-panel {
         gap: 8px;
     }
 
-    .select-complex {
-        gap: 12px;
-    }
 
-    .complex-bubble {
-        min-height: 210px;
-        padding: 28px 12px;
-    }
 
-    .complex-bubble p {
-        font-size: 26px;
-    }
 
-    .complex-bubble .btn {
-        min-width: 0;
-        width: 100%;
-        min-height: 58px;
-        padding: 12px;
-        font-size: 21px;
-    }
 
     .bubble {
         padding: 12px;
@@ -421,9 +403,6 @@ body.guest #side-panel {
 }
 
 @media (max-width: 380px) {
-    .select-complex {
-        grid-template-columns: 1fr;
-    }
 
     .greet-date {
         font-size: 11px;
