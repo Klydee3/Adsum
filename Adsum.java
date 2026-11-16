@@ -69,7 +69,6 @@ public class Adsum {
             System.out.println("Не удалось сохранить копию "+fileName+": "+e.getMessage());
         }
     }
-    // Старые файлы students.txt и classteachers.txt переносятся в accounts.txt один раз
     static boolean importLegacyFiles() {
         boolean changed=false;
         if(new java.io.File("students.txt").exists()) {
@@ -106,7 +105,6 @@ public class Adsum {
         }
         return changed;
     }
-    // Если в системе нет ни одного главного разработчика, создаётся maindev
     static boolean ensureMainDeveloper() {
         for(Account a:accounts.values()) {
             if(a.getRole()==Role.MAIN_DEVELOPER) {
@@ -179,7 +177,6 @@ public class Adsum {
 			throw new RuntimeException(e);
 		}
 	}
-	// Все данные (аккаунты, ученики, классные руководители) хранятся в одном файле accounts.txt
 	static synchronized void saveAccounts() {
 		for(Account a:accounts.values()) {
 			if(a.getRole()==Role.STUDENT) {

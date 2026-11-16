@@ -9,9 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-// Питательные комплексы столовой и меню по дням. Каждая запись привязана к школе.
-// complexes.txt: id TAB школа TAB название TAB блюдо|блюдо|...
-// menudays.txt:  дата TAB школа TAB id,id,...
 class Complex {
     final int id;
     final String school;
@@ -137,7 +134,6 @@ class Menu {
         }
         return r;
     }
-    // Комплекс возвращается только если он принадлежит указанной школе
     static synchronized Complex find(int id,String school) {
         for(Complex x:complexes) {
             if(x.id==id&&x.school.equals(school)) {
@@ -173,7 +169,6 @@ class Menu {
         }
         save();
     }
-    // Меню на день только для одной школы: чужие комплексы в выдачу не попадают
     static synchronized List<Complex> menuFor(String date,String school) {
         List<Complex> r=new ArrayList<>();
         List<Integer> ids=days.get(dayKey(date,school));

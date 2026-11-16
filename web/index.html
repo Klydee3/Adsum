@@ -3,12 +3,12 @@
 	<head>
 		<meta charset="UTF-8">
 		<title>Adsum</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<script>try{document.documentElement.setAttribute("data-theme",localStorage.getItem("theme")==="light"?"light":"dark");}catch(e){}</script>
 		<link rel="stylesheet" href="style.css">
 		<link rel="icon" type="image/png" href="icon.png">
 	</head>
 	<body>
-		<!-- Все страницы сайта лежат здесь в <template>. Сервер отдаёт этот файл по любому адресу вида /имя.html,
-		     а pages.js выбирает шаблон с нужным data-page и вставляет его в #app. -->
 		<div id="app"></div>
 		<template data-page="index.html" data-title="Adsum">
         <div class="container">
@@ -17,7 +17,7 @@
 				<input class="name-input" id="login-input" type="text" placeholder="Логин">
 				<input class="name-input" id="password-input" type="password" placeholder="Пароль">
 				<button class="btn btn-yes" id="login-btn">Войти</button>
-				<button class="btn" id="to-reg-btn">Регистрация(Если вы не ученик!)</button>
+				<button class="btn" id="to-reg-btn">Регистрация (если вы не ученик)</button>
 				<p id="message"></p>
 			</div>
 		</div>
@@ -119,9 +119,9 @@
 				<label for="school-select">Школа</label>
 				<select id="school-select"></select>
 			</div>
-			<div>
-				<input class="btn date-choise" type="date" id="menu-date">
-				<button class="btn" id="show-btn">Показать</button>
+			<div class="toolbar">
+				<input type="date" id="menu-date">
+				<button class="btn btn-yes" id="show-btn">Показать</button>
 			</div>
 			<p id="message"></p>
 			<div id="menu-view"></div>
@@ -219,7 +219,7 @@
 			</div>
 			<div class="bubble wide">
 				<h3>Меню на день</h3>
-				<label for="menu-date">Дата</label>
+				<label>Дата</label>
 				<input type="date" id="menu-date">
 				<p>Отметьте комплексы, которые будут в этот день:</p>
 				<div id="complex-list"></div>
@@ -233,12 +233,26 @@
 		<template data-page="settings.html" data-title="Adsum: Настройки">
 		<div class="container">
 			<h1>Настройки</h1>
-			<div class="select-complex">
-				<button class="btn" id="change-pass-btn">Смена пароля</button>
-				<button class="btn" id="delete-account-btn">Удаление аккаунта</button>
+			<div class="bubble">
+				<h3>Тема оформления</h3>
+				<div class="theme-switch" role="group" aria-label="Тема оформления">
+					<button type="button" id="theme-dark" aria-pressed="true">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>Тёмная
+					</button>
+					<button type="button" id="theme-light" aria-pressed="false">
+						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>Светлая
+					</button>
+				</div>
 			</div>
-			<div class="select-complex">
-				<button class="btn" id="logout-btn">Выход из аккаунта</button>
+			<div class="bubble">
+				<h3>Аккаунт</h3>
+				<div class="select-complex">
+					<button class="btn" id="change-pass-btn">Смена пароля</button>
+					<button class="btn" id="logout-btn">Выход из аккаунта</button>
+				</div>
+				<div class="select-complex">
+					<button class="btn btn-no" id="delete-account-btn">Удаление аккаунта</button>
+				</div>
 			</div>
 			<p id="message"></p>
 		</div>
@@ -259,10 +273,12 @@
 		<div class="container">
 			<h1>Кабинет ученика</h1>
 			<div class="bubble">
-				<p>Будете сегодня в школе?</p>
-				<button class="btn btn-yes" id="btn-yes">Да</button>
-				<button class="btn btn-no" id="btn-no">Нет</button>
-				<input class="name-input" id="reason-input" type="text" placeholder="Причина отсутствия (если нет)">
+				<h3>Будете сегодня в школе?</h3>
+				<div class="select-complex">
+					<button class="btn btn-yes" id="btn-yes">Да, буду</button>
+					<button class="btn btn-no" id="btn-no">Нет</button>
+				</div>
+				<input class="name-input" id="reason-input" type="text" placeholder="Причина отсутствия, если не придёте">
 			</div>
 			<p id="message"></p>
 		</div>
@@ -272,11 +288,11 @@
 		<template data-page="summary.html" data-title="Adsum: Утренняя сводка">
 	<div class="container">
 		<h1>Утренняя сводка</h1>
-		<div>
-			<input class="btn date-choise" type="date" id="summary-date">
-			<button class="btn summary-btns" id="show-btn">Показать</button>
-			<button class="btn summary-btns" id="csv-btn">Скачать CSV</button>
-			<button class="btn summary-btns" id="reasons-btn">Причины отсутствующих</button>
+		<div class="toolbar">
+			<input type="date" id="summary-date">
+			<button class="btn btn-yes" id="show-btn">Показать</button>
+			<button class="btn" id="csv-btn">Скачать CSV</button>
+			<button class="btn" id="reasons-btn">Причины отсутствующих</button>
 		</div>
 		<div class="table-wrap">
 		<table id="summary-table">

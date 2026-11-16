@@ -1,6 +1,3 @@
-// Объединённые скрипты страниц. Каждый бывший файл вставлен без изменений кода
-// в отдельную функцию, которая запускается только на своей странице.
-// Общий код (шапка, меню, clearSession, two) по-прежнему лежит в layout.js.
 const pageScripts={};
 
 // ===== admin.js (admin.html) =====
@@ -796,6 +793,14 @@ pageScripts["settings.html"]=function() {
 	        }
 	    }
 	};
+	function syncTheme() {
+		const t=getTheme();
+		document.getElementById("theme-dark").setAttribute("aria-pressed",t==="dark");
+		document.getElementById("theme-light").setAttribute("aria-pressed",t==="light");
+	}
+	document.getElementById("theme-dark").addEventListener("click",function(){setTheme("dark");syncTheme();});
+	document.getElementById("theme-light").addEventListener("click",function(){setTheme("light");syncTheme();});
+	syncTheme();
 	document.getElementById("change-pass-btn").addEventListener("click",function(){
 		location.href="/change.html";
 	});
@@ -1011,11 +1016,9 @@ pageScripts["teacher.html"]=function() {
 	}
 };
 
-// Страница входа называется index.html, а её скрипт лежит под именем app.html
 if(!pageScripts["index.html"]) {pageScripts["index.html"]=pageScripts["app.html"];}
 
 const pageName=location.pathname.split("/").pop()||"index.html";
-// Все страницы лежат в index.html как <template data-page="имя.html">: вставляем нужную в #app
 (function() {
     const app=document.getElementById("app");
     const tpl=document.querySelector('template[data-page="'+pageName+'"]');
@@ -1026,6 +1029,7 @@ const pageName=location.pathname.split("/").pop()||"index.html";
     }
     document.title=tpl.getAttribute("data-title");
     app.appendChild(tpl.content.cloneNode(true));
+    if (window.enhanceDatePickers) {window.enhanceDatePickers(app);}
 })();
 if(pageScripts[pageName]) {
     pageScripts[pageName]();

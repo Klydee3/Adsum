@@ -235,7 +235,6 @@ public class AdsumServer {
         public void handle(HttpExchange exchange) throws IOException {
             String path=exchange.getRequestURI().getPath();
             if(path.equals("/")||path.endsWith(".html")) {
-                // Все страницы объединены в один файл index.html, выбор страницы делает pages.js по адресу
                 path="/index.html";
             }
             File root=new File("web").getCanonicalFile();
@@ -318,7 +317,6 @@ public class AdsumServer {
             sendJson(exchange,"{\"result\":\"ok\",\"name\":\""+esc(key)+"\"}");
         }
     }
-    // Защита от подбора пароля: 5 неверных попыток -> блокировка входа для логина на 1 минуту
     static final int MAX_LOGIN_ATTEMPTS=5;
     static final long LOGIN_LOCK_MS=60_000;
     static final long LOGIN_IDLE_RESET_MS=10*60_000;
@@ -331,7 +329,6 @@ public class AdsumServer {
     static String attemptKey(String login) {
         return login.length()>200?login.substring(0,200):login;
     }
-    // Сколько секунд ещё действует блокировка (0 - вход разрешён)
     static synchronized long loginLockSeconds(String login) {
         String key=attemptKey(login);
         LoginAttempt a=loginAttempts.get(key);
@@ -345,7 +342,6 @@ public class AdsumServer {
         loginAttempts.remove(key);
         return 0;
     }
-    // Записывает неудачную попытку, возвращает сколько попыток осталось (0 - логин заблокирован)
     static synchronized int registerLoginFailure(String login) {
         long now=System.currentTimeMillis();
         if(loginAttempts.size()>10000) {
@@ -872,7 +868,6 @@ public class AdsumServer {
     static boolean isCafeteriaStaff(Account a) {
         return a.getRole()==Role.CAFETERIA||a.getRole()==Role.MAIN_DEVELOPER;
     }
-    // Школа, в рамках которой работает сотрудник столовой: своя, а у главного разработчика - выбранная из списка
     static String menuSchool(Account account,Map<String,String> params) {
         if(account.getRole()==Role.MAIN_DEVELOPER) {
             String school=param(params,"school");
@@ -1046,8 +1041,6 @@ public class AdsumServer {
             sendJson(exchange,"{\"result\":\"ok\"}");
         }
     }
-    // Просмотр меню на день. Меню отдаётся только в ту школу, которая его поставила:
-    // школа берётся из аккаунта смотрящего, а не из запроса. Исключение - главный разработчик.
     static class MenuViewHandler implements HttpHandler {
         public void handle(HttpExchange exchange) throws IOException {
             Account account=requireAuth(exchange);
