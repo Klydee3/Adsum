@@ -581,3 +581,11 @@ body.guest #side-rail, body.guest #side-panel { display: none; }
     .dp-pop { left: 0; transform: translateY(-6px) scale(0.98); }
     .dp.open .dp-pop { transform: none; }
 }
+
+/* ---------- Дневник ---------- */
+.journal-row { flex-wrap: wrap; }
+.journal-row .complex-info { flex: 1 1 140px; }
+.journal-row select { flex: 0 0 96px; width: 96px; margin: 0; }
+.journal-row input { flex: 1 1 140px; margin: 0; }
+#diary-days { display: flex; flex-direction: column; align-items: center; width: 100%; }
+#journal-box > h3:not(:first-child) { margin-top: 22px; }

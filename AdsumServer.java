@@ -1074,6 +1074,212 @@ public class AdsumServer {
                 +"\",\"complexes\":"+complexesJson(Menu.menuFor(date,school))+"}");
         }
     }
+    static boolean isJournalStaff(Account a) {
+        return a.getRole()==Role.TEACHER||isStaff(a);
+    }
+    static String jsonArray(java.util.List<String> items) {
+        return "["+String.join(",",items)+"]";
+    }
+    static String stringArray(java.util.Collection<String> items) {
+        java.util.List<String> r=new ArrayList<>();
+        for(String s:items) {
+            r.add("\""+esc(s)+"\"");
+        }
+        return jsonArray(r);
+    }
+    static java.util.List<Map.Entry<String,Student>> classRoster(String school,String className) {
+        java.util.List<Map.Entry<String,Student>> r=new ArrayList<>();
+        for(Map.Entry<String,Student> e:Adsum.students.entrySet()) {
+            if(school.equals(e.getValue().getSchool())&&className.equals(e.getValue().getClassName())) {
+                r.add(e);
+            }
+        }
+        r.sort((a,b)->a.getKey().compareTo(b.getKey()));
+        return r;
+    }
+    static String journalParamError(String school,String className,String subject,String date) {
+        if(school.isEmpty()) {
+            return "не указана школа";
+        }
+        if(className.isEmpty()||!Diary.cleanLine(className,100)) {
+            return "не указан класс";
+        }
+        if(subject.isEmpty()||!Diary.cleanLine(subject,60)) {
+            return "укажите предмет (до 60 символов)";
+        }
+        if(!validDate(date)) {
+            return "некорректная дата";
+        }
+        return null;
+    }
+    static class DiaryHandler implements HttpHandler {
+        public void handle(HttpExchange exchange) throws IOException {
+            Account account=requireAuth(exchange);
+            if(account==null) {
+                return;
+            }
+            Student student=Adsum.students.get(account.getLogin());
+            if(account.getRole()!=Role.STUDENT||student==null) {
+                sendJson(exchange,403,err("дневник доступен только ученикам"));
+                return;
+            }
+            String date=param(parseQuery(exchange),"date");
+            if(date.isEmpty()) {
+                date=java.time.LocalDate.now().toString();
+            }
+            if(!validDate(date)) {
+                sendJson(exchange,err("некорректная дата"));
+                return;
+            }
+            String school=account.getSchool();
+            String className=student.getClassName();
+            java.time.LocalDate monday=java.time.LocalDate.parse(date)
+                .with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+            java.util.List<String> days=new ArrayList<>();
+            for(int i=0;i<7;i++) {
+                String d=monday.plusDays(i).toString();
+                java.util.List<String> homework=new ArrayList<>();
+                for(Homework h:Diary.homeworkOn(school,className,d)) {
+                    homework.add(h.toJson());
+                }
+                java.util.List<String> grades=new ArrayList<>();
+                for(Grade g:Diary.gradesOn(school,account.getLogin(),d)) {
+                    grades.add(g.toJson());
+                }
+                days.add("{\"date\":\""+d+"\",\"homework\":"+jsonArray(homework)+",\"grades\":"+jsonArray(grades)+"}");
+            }
+            java.util.List<String> averages=new ArrayList<>();
+            for(Map.Entry<String,double[]> e:Diary.averages(school,account.getLogin()).entrySet()) {
+                double[] a=e.getValue();
+                averages.add("{\"subject\":\""+esc(e.getKey())+"\",\"average\":"
+                    +String.format(java.util.Locale.ROOT,"%.1f",a[0]/a[1])+",\"count\":"+(int)a[1]+"}");
+            }
+            sendJson(exchange,"{\"result\":\"ok\",\"class\":\""+esc(className)+"\",\"from\":\""+monday
+                +"\",\"to\":\""+monday.plusDays(6)+"\",\"days\":"+jsonArray(days)
+                +",\"averages\":"+jsonArray(averages)+"}");
+        }
+    }
+    static class JournalClassesHandler implements HttpHandler {
+        public void handle(HttpExchange exchange) throws IOException {
+            Account account=requireAuth(exchange);
+            if(account==null) {
+                return;
+            }
+            if(!isJournalStaff(account)) {
+                sendJson(exchange,403,err("нет доступа"));
+                return;
+            }
+            String school=menuSchool(account,parseQuery(exchange));
+            if(school.isEmpty()) {
+                sendJson(exchange,err("не указана школа"));
+                return;
+            }
+            java.util.Set<String> classes=new java.util.TreeSet<>(AdsumServer::compareClasses);
+            for(Student s:Adsum.students.values()) {
+                if(school.equals(s.getSchool())&&!s.getClassName().isEmpty()) {
+                    classes.add(s.getClassName());
+                }
+            }
+            sendJson(exchange,"{\"result\":\"ok\",\"classes\":"+stringArray(classes)
+                +",\"subjects\":"+stringArray(Diary.subjectsOf(school))+"}");
+        }
+    }
+    static class JournalHandler implements HttpHandler {
+        public void handle(HttpExchange exchange) throws IOException {
+            Account account=requireAuth(exchange);
+            if(account==null) {
+                return;
+            }
+            if(!isJournalStaff(account)) {
+                sendJson(exchange,403,err("нет доступа"));
+                return;
+            }
+            Map<String,String> params=parseQuery(exchange);
+            String school=menuSchool(account,params);
+            String className=param(params,"class");
+            String subject=param(params,"subject");
+            String date=param(params,"date");
+            String error=journalParamError(school,className,subject,date);
+            if(error!=null) {
+                sendJson(exchange,err(error));
+                return;
+            }
+            java.util.List<Map.Entry<String,Student>> roster=classRoster(school,className);
+            if(roster.isEmpty()) {
+                sendJson(exchange,err("в этом классе нет учеников"));
+                return;
+            }
+            java.util.List<String> students=new ArrayList<>();
+            for(Map.Entry<String,Student> e:roster) {
+                Grade g=Diary.gradeOf(school,date,subject,e.getKey());
+                students.add("{\"login\":\""+esc(e.getKey())+"\",\"mark\":"+(g==null?0:g.mark)
+                    +",\"comment\":\""+esc(g==null?"":g.comment)+"\"}");
+            }
+            Homework h=Diary.homeworkOf(school,className,date,subject);
+            sendJson(exchange,"{\"result\":\"ok\",\"homework\":\""+esc(h==null?"":h.text)
+                +"\",\"students\":"+jsonArray(students)+"}");
+        }
+    }
+    static class JournalSaveHandler implements HttpHandler {
+        public void handle(HttpExchange exchange) throws IOException {
+            if(!requirePost(exchange)) {
+                return;
+            }
+            Account account=requireAuth(exchange);
+            if(account==null) {
+                return;
+            }
+            if(!isJournalStaff(account)) {
+                sendJson(exchange,403,err("нет доступа"));
+                return;
+            }
+            Map<String,String> params=parseBody(exchange);
+            String school=menuSchool(account,params);
+            String className=param(params,"class");
+            String subject=param(params,"subject");
+            String date=param(params,"date");
+            String error=journalParamError(school,className,subject,date);
+            if(error!=null) {
+                sendJson(exchange,err(error));
+                return;
+            }
+            String text=param(params,"homework");
+            if(!Diary.cleanLine(text,300)) {
+                sendJson(exchange,err("домашнее задание: до 300 символов, одной строкой"));
+                return;
+            }
+            if(classRoster(school,className).isEmpty()) {
+                sendJson(exchange,err("в этом классе нет учеников"));
+                return;
+            }
+            java.util.List<Diary.Entry> entries=new ArrayList<>();
+            String raw=params.get("entries");
+            if(raw!=null) {
+                for(String line:raw.split("\\r?\\n")) {
+                    if(line.isEmpty()) {
+                        continue;
+                    }
+                    String[] p=line.split("\t",3);
+                    Student s=p.length==3&&Diary.cleanLine(p[2],200)?Adsum.students.get(p[2]):null;
+                    if(s==null||!school.equals(s.getSchool())||!className.equals(s.getClassName())) {
+                        sendJson(exchange,err("ученик не найден в этом классе"));
+                        return;
+                    }
+                    if(!p[0].matches("\\d{1,2}")||Integer.parseInt(p[0])>Diary.MAX_MARK) {
+                        sendJson(exchange,err("оценка должна быть от 1 до "+Diary.MAX_MARK));
+                        return;
+                    }
+                    if(!Diary.cleanLine(p[1],100)) {
+                        sendJson(exchange,err("комментарий: до 100 символов, одной строкой"));
+                        return;
+                    }
+                    entries.add(new Diary.Entry(p[2],Integer.parseInt(p[0]),p[1].trim()));
+                }
+            }
+            Diary.apply(school,className,date,subject,text,account.getLogin(),entries);
+            sendJson(exchange,"{\"result\":\"ok\"}");
+        }
+    }
     static void route(HttpServer server,String path,HttpHandler handler) {
         server.createContext(path,exchange->{
             try {
@@ -1092,6 +1298,7 @@ public class AdsumServer {
     public static void main(String[] args) throws IOException {
         Adsum.loadRegistry();
         Menu.load();
+        Diary.load();
         HttpServer server = HttpServer.create(new InetSocketAddress(8080), 0);
         route(server,"/api/students",new StudentsHandler());
         route(server,"/api/schools",new SchoolsHandler());
@@ -1118,6 +1325,10 @@ public class AdsumServer {
         route(server,"/api/complex-delete",new ComplexDeleteHandler());
         route(server,"/api/menu-set",new MenuSetHandler());
         route(server,"/api/menu",new MenuViewHandler());
+        route(server,"/api/diary",new DiaryHandler());
+        route(server,"/api/journal-classes",new JournalClassesHandler());
+        route(server,"/api/journal",new JournalHandler());
+        route(server,"/api/journal-save",new JournalSaveHandler());
         server.start();
         System.out.println("Сервер запущен на порту 8080!");
     }

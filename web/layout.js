@@ -178,6 +178,12 @@ function clearSession() {
         links+='<a href="/reg-page.html">Регистрация</a>';
     }else{
 		links+='<a href="/menu.html">Школьное меню</a>';
+		if(role==="STUDENT"){
+			links+='<a href="/diary.html">Электронный дневник</a>';
+		}
+		if(role==="TEACHER"||role==="ADMIN"||role==="MAIN_DEVELOPER"){
+			links+='<a href="/journal.html">Журнал оценок</a>';
+		}
 		if(role==="MAIN_DEVELOPER"){
 			links+='<a href="/student-list.html">Список учеников</a>';
 			links+='<a href="/register-student.html">Регистрация ученика</a>';

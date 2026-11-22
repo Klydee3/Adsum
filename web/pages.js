@@ -1016,6 +1016,312 @@ pageScripts["teacher.html"]=function() {
 	}
 };
 
+pageScripts["diary.html"]=function() {
+	const token=localStorage.getItem("token");
+	if(!token||localStorage.getItem("role")!=="STUDENT"){
+	    location.href="/index.html";
+	    return;
+	}
+	const messageBox=document.getElementById("message");
+	const message={
+	    _timer:null,
+	    get textContent(){return messageBox.textContent;},
+	    set textContent(text){
+	        messageBox.textContent=text;
+	        clearTimeout(this._timer);
+	        if(text!==""){
+	            this._timer=setTimeout(function(){messageBox.textContent="";},5000);
+	        }
+	    }
+	};
+	const dateInput=document.getElementById("diary-date");
+	const daysBox=document.getElementById("diary-days");
+	const averagesBox=document.getElementById("diary-averages");
+	const rangeBox=document.getElementById("diary-range");
+	const weekdays=["Воскресенье","Понедельник","Вторник","Среда","Четверг","Пятница","Суббота"];
+	const months=["января","февраля","марта","апреля","мая","июня","июля","августа","сентября","октября","ноября","декабря"];
+	function toDate(iso) {
+	    const p=iso.split("-");
+	    return new Date(+p[0],+p[1]-1,+p[2]);
+	}
+	function toIso(d) {
+	    return d.getFullYear()+"-"+two(d.getMonth()+1)+"-"+two(d.getDate());
+	}
+	function shortDate(iso) {
+	    const d=toDate(iso);
+	    return d.getDate()+" "+months[d.getMonth()];
+	}
+	function appendList(box,title,rows) {
+	    if(rows.length===0) {
+	        return;
+	    }
+	    if(title!=="") {
+	        const label=document.createElement("label");
+	        label.textContent=title;
+	        box.appendChild(label);
+	    }
+	    const ul=document.createElement("ul");
+	    rows.forEach(function(r) {
+	        const li=document.createElement("li");
+	        const strong=document.createElement("strong");
+	        strong.textContent=r[0];
+	        li.appendChild(strong);
+	        li.appendChild(document.createTextNode(r[1]));
+	        ul.appendChild(li);
+	    });
+	    box.appendChild(ul);
+	}
+	function shiftWeek(days) {
+	    const d=toDate(dateInput.value);
+	    d.setDate(d.getDate()+days);
+	    dateInput.value=toIso(d);
+	    load();
+	}
+	function load() {
+	    fetch("/api/diary?date="+encodeURIComponent(dateInput.value),{headers:{"Authorization":"Bearer "+token}})
+	    .then(function(r) {return r.json();})
+	    .then(function(d) {
+	        if(d.result!=="ok") {
+	            message.textContent=d.message||"Ошибка";
+	            return;
+	        }
+	        rangeBox.textContent=shortDate(d.from)+" — "+shortDate(d.to)+", "+d["class"]+" класс";
+	        daysBox.textContent="";
+	        d.days.forEach(function(day,i) {
+	            const empty=day.homework.length===0&&day.grades.length===0;
+	            if(i===6&&empty) {
+	                return;
+	            }
+	            const box=document.createElement("div");
+	            box.className="bubble wide";
+	            const h=document.createElement("h3");
+	            h.textContent=weekdays[toDate(day.date).getDay()]+", "+shortDate(day.date);
+	            box.appendChild(h);
+	            if(empty) {
+	                const p=document.createElement("p");
+	                p.textContent="Записей нет";
+	                box.appendChild(p);
+	            }
+	            appendList(box,"Домашнее задание",day.homework.map(function(x) {return [x.subject,": "+x.text];}));
+	            appendList(box,"Оценки",day.grades.map(function(x) {
+	                return [x.subject,": "+x.mark+(x.comment!==""?" — "+x.comment:"")];
+	            }));
+	            daysBox.appendChild(box);
+	        });
+	        averagesBox.textContent="";
+	        if(d.averages.length===0) {
+	            averagesBox.textContent="Оценок пока нет";
+	            return;
+	        }
+	        appendList(averagesBox,"",d.averages.map(function(a) {
+	            return [a.subject,": "+a.average+" (оценок: "+a.count+")"];
+	        }));
+	    })
+	    .catch(function() {message.textContent="Сервер недоступен";});
+	}
+	dateInput.value=toIso(new Date());
+	dateInput.addEventListener("change",load);
+	document.getElementById("prev-week").addEventListener("click",function() {shiftWeek(-7);});
+	document.getElementById("next-week").addEventListener("click",function() {shiftWeek(7);});
+	document.getElementById("back-btn").addEventListener("click",function() {
+	    location.href="/index.html";
+	});
+	load();
+};
+
+pageScripts["journal.html"]=function() {
+	const role=localStorage.getItem("role");
+	if(!localStorage.getItem("token")||(role!=="TEACHER"&&role!=="ADMIN"&&role!=="MAIN_DEVELOPER")){
+	    location.href="/index.html";
+	    return;
+	}
+	const messageBox=document.getElementById("message");
+	const message={
+	    _timer:null,
+	    get textContent(){return messageBox.textContent;},
+	    set textContent(text){
+	        messageBox.textContent=text;
+	        clearTimeout(this._timer);
+	        if(text!==""){
+	            this._timer=setTimeout(function(){messageBox.textContent="";},5000);
+	        }
+	    }
+	};
+	const token=localStorage.getItem("token");
+	const authHeader={"Authorization":"Bearer "+token};
+	const postHeaders={"Content-Type":"application/x-www-form-urlencoded","Authorization":"Bearer "+token};
+	const schoolSelect=document.getElementById("school-select");
+	const classSelect=document.getElementById("journal-class");
+	const subjectInput=document.getElementById("journal-subject");
+	const dateInput=document.getElementById("journal-date");
+	const homeworkInput=document.getElementById("journal-homework");
+	const listBox=document.getElementById("journal-list");
+	const journalBox=document.getElementById("journal-box");
+	let current=null;
+	let initial=new Map();
+	function oneLine(v) {
+	    return v.replace(/[\t\r\n]+/g," ").trim();
+	}
+	function query(params) {
+	    if(role==="MAIN_DEVELOPER") {
+	        params.push("school="+encodeURIComponent(schoolSelect.value));
+	    }
+	    return params.join("&");
+	}
+	function hideJournal() {
+	    journalBox.style.display="none";
+	}
+	function loadClasses() {
+	    if(role==="MAIN_DEVELOPER"&&schoolSelect.value==="") {
+	        return;
+	    }
+	    hideJournal();
+	    fetch("/api/journal-classes?"+query([]),{headers:authHeader})
+	    .then(function(r) {return r.json();})
+	    .then(function(d) {
+	        if(d.result!=="ok") {
+	            message.textContent=d.message||"Ошибка";
+	            return;
+	        }
+	        classSelect.textContent="";
+	        d.classes.forEach(function(c) {
+	            const o=document.createElement("option");
+	            o.value=c;
+	            o.textContent=c+" класс";
+	            classSelect.appendChild(o);
+	        });
+	        const list=document.getElementById("subjects");
+	        list.textContent="";
+	        d.subjects.forEach(function(s) {
+	            const o=document.createElement("option");
+	            o.value=s;
+	            list.appendChild(o);
+	        });
+	        if(d.classes.length===0) {
+	            message.textContent="В школе пока нет учеников";
+	        }
+	    })
+	    .catch(function() {message.textContent="Ошибка соединения";});
+	}
+	function renderRow(s) {
+	    const row=document.createElement("div");
+	    row.className="complex-row journal-row";
+	    row.dataset.login=s.login;
+	    const info=document.createElement("div");
+	    info.className="complex-info";
+	    const name=document.createElement("strong");
+	    name.textContent=s.login;
+	    info.appendChild(name);
+	    const mark=document.createElement("select");
+	    const none=document.createElement("option");
+	    none.value="";
+	    none.textContent="—";
+	    mark.appendChild(none);
+	    for(let i=1;i<=10;i++) {
+	        const o=document.createElement("option");
+	        o.value=i;
+	        o.textContent=i;
+	        mark.appendChild(o);
+	    }
+	    mark.value=s.mark===0?"":String(s.mark);
+	    const comment=document.createElement("input");
+	    comment.type="text";
+	    comment.maxLength=100;
+	    comment.placeholder="Комментарий";
+	    comment.value=s.comment;
+	    row.appendChild(info);
+	    row.appendChild(mark);
+	    row.appendChild(comment);
+	    listBox.appendChild(row);
+	}
+	function showClass() {
+	    const subject=oneLine(subjectInput.value);
+	    if(classSelect.value===""||subject===""||dateInput.value==="") {
+	        message.textContent="Выберите класс, предмет и дату";
+	        return;
+	    }
+	    const picked={className:classSelect.value,subject:subject,date:dateInput.value};
+	    fetch("/api/journal?"+query(["class="+encodeURIComponent(picked.className),
+	        "subject="+encodeURIComponent(picked.subject),"date="+encodeURIComponent(picked.date)]),{headers:authHeader})
+	    .then(function(r) {return r.json();})
+	    .then(function(d) {
+	        if(d.result!=="ok") {
+	            hideJournal();
+	            message.textContent=d.message||"Ошибка";
+	            return;
+	        }
+	        current=picked;
+	        initial=new Map();
+	        listBox.textContent="";
+	        homeworkInput.value=d.homework;
+	        d.students.forEach(function(s) {
+	            initial.set(s.login,s);
+	            renderRow(s);
+	        });
+	        journalBox.style.display="";
+	    })
+	    .catch(function() {message.textContent="Ошибка соединения";});
+	}
+	function save() {
+	    if(current===null) {
+	        return;
+	    }
+	    const lines=[];
+	    Array.prototype.forEach.call(listBox.querySelectorAll(".journal-row"),function(row) {
+	        const login=row.dataset.login;
+	        const mark=row.querySelector("select").value;
+	        const comment=oneLine(row.querySelector("input").value);
+	        const before=initial.get(login);
+	        const wasMark=before.mark===0?"":String(before.mark);
+	        if(mark===wasMark&&(mark===""||comment===before.comment)) {
+	            return;
+	        }
+	        lines.push((mark===""?"0":mark)+"\t"+comment+"\t"+login);
+	    });
+	    fetch("/api/journal-save",{method:"POST",headers:postHeaders,
+	        body:query(["class="+encodeURIComponent(current.className),
+	            "subject="+encodeURIComponent(current.subject),
+	            "date="+encodeURIComponent(current.date),
+	            "homework="+encodeURIComponent(oneLine(homeworkInput.value)),
+	            "entries="+encodeURIComponent(lines.join("\n"))])})
+	    .then(function(r) {return r.json();})
+	    .then(function(d) {
+	        if(d.result==="ok") {
+	            message.textContent="Сохранено";
+	            showClass();
+	        } else {
+	            message.textContent=d.message||"Ошибка";
+	        }
+	    })
+	    .catch(function() {message.textContent="Ошибка соединения";});
+	}
+	const now=new Date();
+	dateInput.value=now.getFullYear()+"-"+two(now.getMonth()+1)+"-"+two(now.getDate());
+	classSelect.addEventListener("change",hideJournal);
+	subjectInput.addEventListener("input",hideJournal);
+	dateInput.addEventListener("change",hideJournal);
+	schoolSelect.addEventListener("change",loadClasses);
+	document.getElementById("load-btn").addEventListener("click",showClass);
+	document.getElementById("save-btn").addEventListener("click",save);
+	document.getElementById("back-btn").addEventListener("click",function() {
+	    location.href="/index.html";
+	});
+	if(role==="MAIN_DEVELOPER") {
+	    document.getElementById("school-box").style.display="";
+	    fetch("/api/schools").then(function(r) {return r.json();}).then(function(d) {
+	        (d.schools||[]).forEach(function(name) {
+	            const o=document.createElement("option");
+	            o.value=name;
+	            o.textContent=name;
+	            schoolSelect.appendChild(o);
+	        });
+	        loadClasses();
+	    });
+	} else {
+	    loadClasses();
+	}
+};
+
 if(!pageScripts["index.html"]) {pageScripts["index.html"]=pageScripts["app.html"];}
 
 const pageName=location.pathname.split("/").pop()||"index.html";

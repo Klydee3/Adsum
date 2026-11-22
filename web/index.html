@@ -94,6 +94,26 @@
 	
 		</template>
 
+		<template data-page="diary.html" data-title="Adsum: Электронный дневник">
+		<div class="container">
+			<h1>Электронный дневник</h1>
+			<div class="toolbar">
+				<button class="btn" id="prev-week">Предыдущая неделя</button>
+				<input type="date" id="diary-date">
+				<button class="btn" id="next-week">Следующая неделя</button>
+			</div>
+			<p id="diary-range"></p>
+			<div id="diary-days"></div>
+			<div class="bubble wide">
+				<h3>Средние оценки</h3>
+				<div id="diary-averages"></div>
+			</div>
+			<p id="message"></p>
+			<button class="btn" id="back-btn">Назад</button>
+		</div>
+	
+		</template>
+
 		<template data-page="developer.html" data-title="Adsum: Кабинет Главного Разработчика">
 		<div class="container">
 			<h1>Кабинет Главного Разработчика</h1>
@@ -108,6 +128,36 @@
 			<h1>Кабинет Главного Разработчика</h1>
 			<p>Все инструменты доступны в меню слева</p>
 			<p id="message"></p>
+		</div>
+	
+		</template>
+
+		<template data-page="journal.html" data-title="Adsum: Журнал оценок">
+		<div class="container">
+			<h1>Журнал оценок</h1>
+			<p id="message"></p>
+			<div class="bubble wide" id="school-box" style="display:none">
+				<label for="school-select">Школа</label>
+				<select id="school-select"></select>
+			</div>
+			<div class="bubble wide">
+				<label for="journal-class">Класс</label>
+				<select id="journal-class"></select>
+				<label for="journal-subject">Предмет</label>
+				<input id="journal-subject" list="subjects" type="text" maxlength="60" placeholder="Например: Математика">
+				<datalist id="subjects"></datalist>
+				<label>Дата</label>
+				<input type="date" id="journal-date">
+				<button class="btn btn-yes" id="load-btn">Показать класс</button>
+			</div>
+			<div class="bubble wide" id="journal-box" style="display:none">
+				<h3>Домашнее задание</h3>
+				<input id="journal-homework" type="text" maxlength="300" placeholder="Что задано на эту дату (пусто — удалить задание)">
+				<h3>Оценки (1–10)</h3>
+				<div id="journal-list"></div>
+				<button class="btn btn-yes" id="save-btn">Сохранить</button>
+			</div>
+			<button class="btn" id="back-btn">Назад</button>
 		</div>
 	
 		</template>
