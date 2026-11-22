@@ -189,7 +189,7 @@ function clearSession() {
 			links+='<a href="/register-student.html">Регистрация ученика</a>';
 			links+='<a href="/applications.html">Заявки на аккаунты</a>';
 			links+='<a href="/assign.html">Классные руководители</a>';
-			links+='<a href="/reg-dev.html">Зарегистрировать Разработчика</a>';
+			links+='<a href="/reg-admin.html">Зарегистрировать администратора</a>';
 			links+='<a href="/summary.html">Утренняя сводка</a>';
 			links+='<a href="/set-school-menu.html">Установить школьное меню</a>';
 		}

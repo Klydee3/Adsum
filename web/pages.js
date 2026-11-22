@@ -93,28 +93,43 @@ pageScripts["applications.html"]=function() {
 	            return;
 	        }
 	        if(data.rows.length===0){
-	            box.textContent="Новых заявок нет";
+	            const note=document.createElement("p");
+	            note.className="grid-note";
+	            note.textContent="Новых заявок нет";
+	            box.appendChild(note);
 	            return;
 	        }
 	        data.rows.forEach(function(row){
 	            const div=document.createElement("div");
 				div.className="bubble";
-				if(row.role=="TEACHER"){
-					row.role="Учитель";
-				}else if(row.role=="ADMIN"){
-					row.role="Администрация";
-				}else{
-					row.role="Столовая";
+				let roleName="Столовая";
+				if(row.role==="TEACHER"){
+					roleName="Учитель";
+				}else if(row.role==="ADMIN"){
+					roleName="Администрация";
 				}
-	            div.textContent=row.login+" ("+row.role+"); ";
+	            const title=document.createElement("div");
+	            title.className="card-title";
+	            title.textContent=row.login;
+	            const meta=document.createElement("div");
+	            meta.className="card-meta";
+	            meta.textContent=roleName;
+	            div.appendChild(title);
+	            div.appendChild(meta);
 				if(role==="MAIN_DEVELOPER"){
-					div.textContent=row.login+" ("+row.role+"; "+row.school+"); ";
+					const school=document.createElement("div");
+					school.className="card-meta";
+					school.textContent=row.school;
+					div.appendChild(school);
 				}
+	            const actions=document.createElement("div");
+	            actions.className="card-actions";
 	            const btn=document.createElement("button");
 	            btn.className="btn";
 	            btn.textContent="Подтвердить";
 	            btn.addEventListener("click",function(){approveAccount(row.login);});
-	            div.appendChild(btn);
+	            actions.appendChild(btn);
+	            div.appendChild(actions);
 	            box.appendChild(div);
 	        });
 	    })
@@ -160,7 +175,10 @@ pageScripts["assign.html"]=function() {
 	        const box=document.getElementById("teachers-box");
 	        box.textContent="";
 	        if(data.teachers.length===0){
-	            box.textContent="Учителей пока нет.";
+	            const note=document.createElement("p");
+	            note.className="grid-note";
+	            note.textContent="Учителей пока нет.";
+	            box.appendChild(note);
 	            return;
 	        }
 	        data.teachers.forEach(function(t){
@@ -208,10 +226,16 @@ pageScripts["assign.html"]=function() {
 	                })
 	                .catch(function(){document.getElementById("message").textContent="Сервер недоступен";});
 	            });
-	            row.appendChild(document.createTextNode(t.login));
+	            const title=document.createElement("div");
+	            title.className="card-title";
+	            title.textContent=t.login;
+	            const actions=document.createElement("div");
+	            actions.className="card-actions";
+	            actions.appendChild(btn);
+	            actions.appendChild(delBtn);
+	            row.appendChild(title);
 	            row.appendChild(input);
-	            row.appendChild(btn);
-				row.appendChild(delBtn);
+	            row.appendChild(actions);
 	            box.appendChild(row);
 	        });
 	    })
@@ -358,9 +382,9 @@ pageScripts["reasons.html"]=function() {
 	});
 };
 
-// ===== reg-dev.js (reg-dev.html) =====
-pageScripts["reg-dev.html"]=function() {
-	if(!localStorage.getItem("token")||localStorage.getItem("role")!=="MAIN_DEVELOPER"){//if(!localStorage.getItem("token")||(localStorage.getItem("role")!=="MAIN_DEVELOPER"&&localStorage.getItem("role")!=="ADMIN")){ --- If mainDev does not exist
+// ===== reg-admin.js (reg-admin.html) =====
+pageScripts["reg-admin.html"]=function() {
+	if(!localStorage.getItem("token")||localStorage.getItem("role")!=="MAIN_DEVELOPER"){
 	    location.href="/index.html";
 	}
 	const messageBox=document.getElementById("message");
@@ -375,19 +399,33 @@ pageScripts["reg-dev.html"]=function() {
 	        }
 	    }
 	};
-	document.getElementById("regDev").addEventListener("click",function(){
-		const name=document.getElementById("devName").value.trim();
-		const pass=document.getElementById("devPass").value.trim();
-		if(name===null||name===""||pass===null||pass===""){
-			message.textContent="Пожалуйста, введите имя и пароль!";
+	document.getElementById("regAdmin").addEventListener("click",function(){
+		const surname=document.getElementById("register-surname").value.trim();
+	    const name=document.getElementById("register-name").value.trim();
+		const patronymic=document.getElementById("register-patronymic").value.trim();
+		const password=document.getElementById("register-password-input").value.trim(); 
+		const school=document.getElementById("register-school").value.trim();
+		if (school==="") {
+	        message.textContent="Введите название школы!";
+	        return;
+	    }
+		if (surname===""||name===""||patronymic==="") {
+	        message.textContent="Введите фамилию, имя и отчество!";
+	        return;
+	    }
+		if (password.length<8) {
+			message.textContent="Пароль не короче 8 символов!";
 			return;
 		}
-		fetch("/api/reg-dev",{
+		fetch("/api/reg-admin",{
 			method:"POST",
 			headers:{"Content-Type":"application/x-www-form-urlencoded",
 			"Authorization":"Bearer "+localStorage.getItem("token")},
-			body:"name="+encodeURIComponent(name)+
-				"&pass="+encodeURIComponent(pass)
+			body:"surname="+encodeURIComponent(surname)+
+				"&name="+encodeURIComponent(name)+
+				"&patronymic="+encodeURIComponent(patronymic)+
+				"&password="+encodeURIComponent(password)+
+				"&school="+encodeURIComponent(school)
 		})
 			.then(function(r){return r.json();})
 			.then(function(data){
@@ -399,6 +437,17 @@ pageScripts["reg-dev.html"]=function() {
 			})
 			.catch(function(){message.textContent="Сервер недоступен";});
 	});
+	fetch("/api/schools")
+	    .then(function(r) {return r.json();})
+	    .then(function(d) {
+	        const list=document.getElementById("schools");
+	        (d.schools||[]).forEach(function(name) {
+	            const o=document.createElement("option");
+	            o.value=name;
+	            list.appendChild(o);
+	        });
+	    })
+	    .catch(function() {});
 };
 
 // ===== reg-page.js (reg-page.html) =====
@@ -421,6 +470,7 @@ pageScripts["reg-page.html"]=function() {
 	document.getElementById("register-btn").addEventListener("click",function() {
 		const surname=document.getElementById("register-surname").value.trim();
 	    const name=document.getElementById("register-name").value.trim();
+		const patronymic=document.getElementById("register-patronymic").value.trim();
 		const password=document.getElementById("register-password-input").value.trim(); 
 		const passwordRepeat=document.getElementById("register-password-input-repeat").value.trim();
 		const role=document.getElementById("role").value.trim();
@@ -429,8 +479,8 @@ pageScripts["reg-page.html"]=function() {
 	        message.textContent="Введите название школы!";
 	        return;
 	    }
-		if (surname===""||name==="") {
-	        message.textContent="Введите фамилию и имя!";
+		if (surname===""||name===""||patronymic==="") {
+	        message.textContent="Введите фамилию, имя и отчество!";
 	        return;
 	    }
 		if (password.length<8) {
@@ -446,6 +496,7 @@ pageScripts["reg-page.html"]=function() {
 	        headers:{"Content-Type":"application/x-www-form-urlencoded"},
 	        body:"surname="+encodeURIComponent(surname)+
 				"&name="+encodeURIComponent(name)+
+				"&patronymic="+encodeURIComponent(patronymic)+
 				"&password="+encodeURIComponent(password)+
 				"&role="+encodeURIComponent(role)+
 				"&school="+encodeURIComponent(school)
@@ -495,9 +546,10 @@ pageScripts["register-student.html"]=function() {
 	document.getElementById("reg-student-btn").addEventListener("click",function(){
 	    const surname=document.getElementById("reg-surname").value.trim();
 	    const name=document.getElementById("reg-name").value.trim();
+	    const patronymic=document.getElementById("reg-patronymic").value.trim();
 	    const className=document.getElementById("reg-class").value.trim();
-	    if(surname===""||name===""||className===""){
-	        message.textContent="Нужны фамилия, имя и класс";
+	    if(surname===""||name===""||patronymic===""||className===""){
+	        message.textContent="Нужны фамилия, имя, отчество и класс";
 	        return;
 	    }
 	    fetch("/api/register",{
@@ -505,6 +557,7 @@ pageScripts["register-student.html"]=function() {
 	        headers:{"Content-Type":"application/x-www-form-urlencoded","Authorization":"Bearer "+localStorage.getItem("token")},
 	        body:"surname="+encodeURIComponent(surname)+
 			"&name="+encodeURIComponent(name)+
+			"&patronymic="+encodeURIComponent(patronymic)+
 			"&className="+encodeURIComponent(className)+
 			"&school="+encodeURIComponent(document.getElementById("reg-school").value.trim())
 	    })
@@ -514,6 +567,7 @@ pageScripts["register-student.html"]=function() {
 	            message.textContent="Ученик зарегистрирован: "+data.name;
 	            document.getElementById("reg-surname").value="";
 	            document.getElementById("reg-name").value="";
+	            document.getElementById("reg-patronymic").value="";
 	            document.getElementById("reg-class").value="";
 	        }else{
 	            message.textContent="Ошибка: "+data.message;
@@ -834,29 +888,46 @@ pageScripts["student-list.html"]=function() {
 	            return;
 	        }
 	        const list=document.getElementById("all-list");
-	        list.textContent=students.length===0?"Учеников пока нет.":"";
+	        list.textContent="";
+	        if(students.length===0) {
+	            const note=document.createElement("p");
+	            note.className="grid-note";
+	            note.textContent="Учеников пока нет.";
+	            list.appendChild(note);
+	            return;
+	        }
 	        students.forEach(function(s) {
-	            const row=document.createElement("div");
-	            row.className="pending-row";
-	            const label=document.createElement("span");
-				label.className="bubble";
-				label.textContent=s.surname+" "+s.name+"("+s["class"]+" класс)";
+	            const card=document.createElement("div");
+	            card.className="bubble";
+	            const title=document.createElement("div");
+	            title.className="card-title";
+	            title.textContent=fullName(s);
+	            const meta=document.createElement("div");
+	            meta.className="card-meta";
+	            meta.textContent=s["class"]+" класс";
+	            const actions=document.createElement("div");
+	            actions.className="card-actions";
 	            const delBtn=document.createElement("button");
 	            delBtn.className="btn btn-no";
 	            delBtn.textContent="Удалить";
 	            delBtn.addEventListener("click",function() {removeStudent(s);});
-	            label.appendChild(delBtn);
-	            row.appendChild(label);
-	            list.appendChild(row);
+	            actions.appendChild(delBtn);
+	            card.appendChild(title);
+	            card.appendChild(meta);
+	            card.appendChild(actions);
+	            list.appendChild(card);
 	        });
 	    })
 	    .catch(function() {message.textContent="Сервер не доступен";});
 	}
+	function fullName(s) {
+	    return [s.surname,s.name,s.patronymic].filter(function(x) {return x;}).join(" ");
+	}
 	function removeStudent(student) {
-	    if(!confirm("Удалить ученика «"+student.surname+" "+student.name+"»? Аккаунт будет удалён без возможности восстановления.")) {
+	    if(!confirm("Удалить ученика «"+fullName(student)+"»? Аккаунт будет удалён без возможности восстановления.")) {
 	        return;
 	    }
-	    fetch("/api/delete-student?name="+encodeURIComponent(student.name)+"&surname="+encodeURIComponent(student.surname),
+	    fetch("/api/delete-student?name="+encodeURIComponent(student.name)+"&surname="+encodeURIComponent(student.surname)+"&patronymic="+encodeURIComponent(student.patronymic||""),
 	    {method:"POST",
 		headers:{"Authorization":"Bearer "+token}})
 	    .then(function(r){return r.json();})

@@ -99,6 +99,17 @@ public class AdsumServer {
         return v!=null&&!v.isEmpty()&&v.length()<=100
             &&v.indexOf(':')<0&&v.indexOf(';')<0&&v.indexOf('\n')<0&&v.indexOf('\r')<0;
     }
+    static boolean cleanNamePart(String v) {
+        if(!cleanField(v)) {
+            return false;
+        }
+        for(int i=0;i<v.length();i++) {
+            if(Character.isWhitespace(v.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
     static String param(Map<String,String> params,String key) {
         String v=params.get(key);
         return v==null?"":v.trim();
@@ -177,9 +188,10 @@ public class AdsumServer {
             Map<String,String> params=parseBody(exchange);
             String name=param(params,"name");
             String surname=param(params,"surname");
+            String patronymic=param(params,"patronymic");
             String className=param(params,"className");
-            if (!cleanField(name)||!cleanField(surname)||!cleanField(className)) {
-                sendJson(exchange,err("нужны имя, фамилия и класс (без символов : ; и переводов строк)"));
+            if (!cleanNamePart(name)||!cleanNamePart(surname)||!cleanNamePart(patronymic)||!cleanField(className)) {
+                sendJson(exchange,err("нужны фамилия, имя, отчество и класс (фамилия, имя и отчество — по одному слову, без символов : ; и переводов строк)"));
                 return;
             }
             String school;
@@ -196,7 +208,7 @@ public class AdsumServer {
                     return;
                 }
             }
-            String key=surname+" "+name;
+            String key=Adsum.fioKey(surname,name,patronymic);
             if (Adsum.students.containsKey(key)||Adsum.accounts.containsKey(key)) {
                 sendJson(exchange,err("уже есть в списках"));
                 return;
@@ -207,7 +219,7 @@ public class AdsumServer {
             studentAcc.setApproved(true);
             studentAcc.setSchool(school);
             Adsum.accounts.put(key,studentAcc);
-            Adsum.students.put(key,new Student(name,surname,className,RegistrationStatus.APPROVED,school));
+            Adsum.students.put(key,new Student(name,surname,patronymic,className,RegistrationStatus.APPROVED,school));
             Adsum.saveAccounts();
             Adsum.saveStudents();
             sendJson(exchange,"{\"result\":\"ok\",\"name\":\""+esc(key)+"\"}");
@@ -472,11 +484,12 @@ public class AdsumServer {
             params.putAll(parseBody(exchange));
             String name=param(params,"name");
             String surname=param(params,"surname");
+            String patronymic=param(params,"patronymic");
             if(name.isEmpty()||surname.isEmpty()) {
-                sendJson(exchange,err("нужны имя и фамилия"));
+                sendJson(exchange,err("нужны фамилия и имя"));
                 return;
             }
-            String key=surname+" "+name;
+            String key=Adsum.fioKey(surname,name,patronymic);
             Student student=Adsum.students.get(key);
             if(student==null) {
                 sendJson(exchange,err("ученик не найден"));
@@ -660,6 +673,7 @@ public class AdsumServer {
             Map<String,String> params=parseBody(exchange);
             String name=param(params,"name");
             String surname=param(params,"surname");
+            String patronymic=param(params,"patronymic");
             String password=params.get("password");
             String roleStr=params.get("role");
             String school=param(params,"school");
@@ -678,15 +692,15 @@ public class AdsumServer {
                 sendJson(exchange,err("данной школы нет в списках!"));
                 return;
             }
-            if (!cleanField(name)||!cleanField(surname)) {
-                sendJson(exchange,err("нужны имя и фамилия (без символов : ; и переводов строк)!"));
+            if (!cleanNamePart(name)||!cleanNamePart(surname)||!cleanNamePart(patronymic)) {
+                sendJson(exchange,err("нужны фамилия, имя и отчество (по одному слову, без символов : ; и переводов строк)!"));
                 return;
             }
             if (password==null||password.length()<8) {
                 sendJson(exchange,err("пароль не короче 8 символов!"));
                 return;
             }
-            String key=surname+" "+name;
+            String key=Adsum.fioKey(surname,name,patronymic);
             if (Adsum.accounts.containsKey(key)) {
                 sendJson(exchange,err("уже есть в списках"));
                 return;
@@ -825,7 +839,7 @@ public class AdsumServer {
             sendJson(exchange,"{\"result\":\"ok\"}");
         }
     }
-    static class RegDevHandler implements HttpHandler {
+    static class RegAdminHandler implements HttpHandler {
         public void handle(HttpExchange exchange) throws IOException {
             if (!requirePost(exchange)) {
                 return;
@@ -834,14 +848,21 @@ public class AdsumServer {
             if(acc==null) {
                 return;
             }
-            if(acc.getRole()!=Role.MAIN_DEVELOPER&&acc.getRole()!=Role.ADMIN) {
+            if(acc.getRole()!=Role.MAIN_DEVELOPER) {
                 sendJson(exchange,403,err("Нет доступа"));
                 return;
             }
             Map<String,String> params=parseBody(exchange);
-            String pass=params.get("pass");
-            String name=param(params,"name");
-            if(pass==null||pass.isEmpty()||name.isEmpty()) {
+            String pass=params.get("password");
+            String surname=params.get("surname");
+			String name=params.get("name");
+			String patronymic=params.get("patronymic");
+			String school=params.get("school");
+            if(pass==null||pass.isEmpty()
+				||surname==null||surname.isEmpty()
+			    ||name==null||name.isEmpty()
+				||patronymic==null||patronymic.isEmpty()
+				||school==null||school.isEmpty()) {
                 sendJson(exchange,err("Введите все поля!"));
                 return;
             }
@@ -857,12 +878,14 @@ public class AdsumServer {
                 sendJson(exchange,err("Аккаунт с таким именем уже существует!"));
                 return;
             }
-            String devSalt=Adsum.newSalt();
-            Account devAcc=new Account(name,Role.MAIN_DEVELOPER,devSalt,Adsum.hashPassword(pass,devSalt));
-            devAcc.setApproved(true);
-            Adsum.accounts.put(name,devAcc);
+            String adminSalt=Adsum.newSalt();
+			String login=surname+" "+name+" "+patronymic;
+            Account adminAcc=new Account(login,Role.ADMIN,adminSalt,Adsum.hashPassword(pass,adminSalt));
+            adminAcc.setApproved(true);
+			adminAcc.setSchool(school);
+            Adsum.accounts.put(login,adminAcc);
             Adsum.saveAccounts();
-            sendJson(exchange,"{\"result\":\"ok\",\"message\":\"Аккаунт Главного Разработчика успешно создан!\"}");
+            sendJson(exchange,"{\"result\":\"ok\",\"message\":\"Аккаунт администратора успешно создан!\"}");
         }
     }
     static boolean isCafeteriaStaff(Account a) {
@@ -1319,7 +1342,7 @@ public class AdsumServer {
         route(server,"/api/approve-account",new ApproveAccountHandler());
         route(server,"/api/teachers-list",new TeachersListHandler());
         route(server,"/api/assign-class",new AssignClassHandler());
-        route(server,"/api/reg-dev",new RegDevHandler());
+        route(server,"/api/reg-admin",new RegAdminHandler());
         route(server,"/api/complexes",new ComplexesHandler());
         route(server,"/api/complex-save",new ComplexSaveHandler());
         route(server,"/api/complex-delete",new ComplexDeleteHandler());

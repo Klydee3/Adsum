@@ -34,6 +34,22 @@ public class Adsum {
 		}
 		return sb.toString();
 	}
+    static String fioKey(String surname,String name,String patronymic) {
+        StringBuilder sb=new StringBuilder();
+        for(String part:new String[]{surname,name,patronymic}) {
+            if(part!=null&&!part.isEmpty()) {
+                if(sb.length()>0) {
+                    sb.append(' ');
+                }
+                sb.append(part);
+            }
+        }
+        return sb.toString();
+    }
+    static String[] splitFio(String login) {
+        String[] p=login.split(" ",3);
+        return new String[]{p[0],p.length>1?p[1]:"",p.length>2?p[2]:""};
+    }
     static Account newAccount(String login,Role role,String password,String school) {
         String salt=newSalt();
         Account acc=new Account(login,role,salt,hashPassword(password,salt));
@@ -47,11 +63,9 @@ public class Adsum {
         for(Account a:accounts.values()) {
             if(a.getRole()==Role.STUDENT) {
                 String login=a.getLogin();
-                int space=login.indexOf(' ');
-                String surname=space<0?login:login.substring(0,space);
-                String name=space<0?"":login.substring(space+1);
+                String[] fio=splitFio(login);
                 RegistrationStatus status=a.isApproved()?RegistrationStatus.APPROVED:RegistrationStatus.PENDING;
-                students.put(login,new Student(name,surname,a.getClassName(),status,a.getSchool()));
+                students.put(login,new Student(fio[1],fio[0],fio[2],a.getClassName(),status,a.getSchool()));
             } else if(a.getRole()==Role.TEACHER&&!a.getClassName().isEmpty()) {
                 classTeacher.put(a.getLogin(),a.getClassName());
             }
