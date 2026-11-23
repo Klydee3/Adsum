@@ -126,13 +126,13 @@
 			<p id="message"></p>
 			<div class="bubble wide" id="school-box" style="display:none">
 				<label for="school-select">Школа</label>
-				<select id="school-select"></select>
+				<select id="school-select" data-picker data-icon="school" data-placeholder="Выберите школу"></select>
 			</div>
 			<div class="bubble wide">
 				<label for="journal-class">Класс</label>
-				<select id="journal-class"></select>
+				<select id="journal-class" data-picker data-icon="class" data-placeholder="Выберите класс"></select>
 				<label for="journal-subject">Предмет</label>
-				<input id="journal-subject" list="subjects" type="text" maxlength="60" placeholder="Например: Математика">
+				<input id="journal-subject" list="subjects" type="text" maxlength="60" data-picker data-custom="true" data-icon="subject" data-placeholder="Выберите предмет">
 				<datalist id="subjects"></datalist>
 				<label>Дата</label>
 				<input type="date" id="journal-date">
@@ -142,6 +142,7 @@
 				<h3>Домашнее задание</h3>
 				<input id="journal-homework" type="text" maxlength="300" placeholder="Что задано на эту дату (пусто — удалить задание)">
 				<h3>Оценки (1–10)</h3>
+				<p id="journal-lock-note" hidden>Выставленные оценки изменяет только администрация школы.</p>
 				<div id="journal-list"></div>
 				<button class="btn btn-yes" id="save-btn">Сохранить</button>
 			</div>
@@ -155,7 +156,7 @@
 			<h1>Школьное меню</h1>
 			<div class="bubble wide" id="school-box" style="display:none">
 				<label for="school-select">Школа</label>
-				<select id="school-select"></select>
+				<select id="school-select" data-picker data-icon="school" data-placeholder="Выберите школу"></select>
 			</div>
 			<div class="toolbar">
 				<input type="date" id="menu-date">
@@ -187,8 +188,8 @@
 				<input class="name-input" id="register-patronymic" type="text" placeholder="Введите отчество администратора">
 				<input class="name-input" id="register-password-input" type="password" placeholder="Введите пароль администратора">
 				<div class="select-group">
-					<label for="school">Выберите школу:</label>
-					<input list="schools" id="register-school" name="school" placeholder="Полное наименование УО">
+					<label for="register-school">Выберите школу:</label>
+					<input list="schools" id="register-school" name="school" data-picker data-icon="school" data-placeholder="Выберите школу">
 					<datalist id="schools"></datalist>
 				</div>
 				<button class="btn btn-yes" id="regAdmin">Зарегистрировать</button>
@@ -208,15 +209,15 @@
 				<input class="name-input" id="register-patronymic" type="text" placeholder="Отчество">
 				<input class="name-input" id="register-password-input" type="password" placeholder="Пароль">
 				<input class="name-input" id="register-password-input-repeat" type="password" placeholder="Повторите пароль">
-				<div class="select-row">
+				<div class="select-row stack">
 					<div class="select-group">
-						<label for="school">Выберите школу:</label>
-						<input list="schools" id="register-school" name="school" placeholder="Полное наименование УО">
+						<label for="register-school">Выберите школу:</label>
+						<input list="schools" id="register-school" name="school" data-picker data-icon="school" data-placeholder="Выберите школу">
 						<datalist id="schools"></datalist>
 					</div>
 					<div class="select-group">
 						<label for="role">Кто вы?</label>
-						<select id="role" name="role-choise">
+						<select id="role" name="role-choise" data-picker data-icon="role">
 							<option value="TEACHER">Учитель</option>
 							<option value="ADMIN">Администрация</option>
 							<option value="CAFETERIA">Столовая</option>
@@ -239,7 +240,7 @@
 			<input class="name-input" id="reg-name" type="text" placeholder="Имя">
 			<input class="name-input" id="reg-patronymic" type="text" placeholder="Отчество">
 			<input class="name-input" id="reg-class" type="text" placeholder="Класс">
-			<input class="name-input" id="reg-school" list="schools" type="text" placeholder="Школа (только для главного разработчика)" style="display:none">
+			<input id="reg-school" list="schools" type="text" data-picker data-icon="school" data-placeholder="Выберите школу" style="display:none">
 			<datalist id="schools"></datalist>
 			<div class="select-row">
 				<button class="btn" id="reg-student-btn">Зарегистрировать ученика</button>
@@ -247,6 +248,27 @@
 			</div>
 		</div>
         <p id="message"></p>
+		<div class="modal-overlay" id="pw-warn-modal" hidden>
+			<div class="modal" role="dialog" aria-modal="true" aria-labelledby="pw-warn-title">
+				<h3 id="pw-warn-title">Внимание!</h3>
+				<p class="modal-text">Для нового аккаунта будет сгенерирован пароль. Заранее подготовьтесь его записать и затем передать ученику.</p>
+				<p class="modal-text">Пароль будет показан <b>только 1 минуту 30 секунд</b>. После этого его нельзя будет посмотреть повторно.</p>
+				<button class="btn btn-yes" id="pw-warn-ok-btn">Я готов записать пароль</button>
+				<button class="btn" id="pw-warn-cancel-btn">Отмена</button>
+			</div>
+		</div>
+		<div class="modal-overlay" id="pw-show-modal" hidden>
+			<div class="modal" role="dialog" aria-modal="true" aria-labelledby="pw-show-title">
+				<h3 id="pw-show-title">Ученик зарегистрирован</h3>
+				<dl class="info-list">
+					<div class="info-row"><dt>Логин (ФИО)</dt><dd id="pw-show-login"></dd></div>
+					<div class="info-row"><dt>Первоначальный пароль</dt><dd class="pw-value" id="pw-show-value"></dd></div>
+				</dl>
+				<p class="modal-text">Запишите пароль и передайте его ученику. Окно закроется автоматически через <b id="pw-show-timer">1:30</b>.</p>
+				<button class="btn" id="pw-copy-btn">Скопировать пароль</button>
+				<button class="btn btn-yes" id="pw-close-btn">Я записал пароль, закрыть</button>
+			</div>
+		</div>
     </div>
 		</template>
 
@@ -256,7 +278,7 @@
 			<p id="message"></p>
 			<div class="bubble wide" id="school-box" style="display:none">
 				<label for="school-select">Школа</label>
-				<select id="school-select"></select>
+				<select id="school-select" data-picker data-icon="school" data-placeholder="Выберите школу"></select>
 			</div>
 			<div class="bubble wide">
 				<h3>Новый питательный комплекс</h3>
@@ -296,6 +318,9 @@
 			<div class="bubble">
 				<h3>Аккаунт</h3>
 				<div class="select-complex">
+					<button class="btn" id="account-info-btn">Информация об аккаунте</button>
+				</div>
+				<div class="select-complex">
 					<button class="btn" id="change-pass-btn">Смена пароля</button>
 					<button class="btn" id="logout-btn">Выход из аккаунта</button>
 				</div>
@@ -304,6 +329,19 @@
 				</div>
 			</div>
 			<p id="message"></p>
+			<div class="modal-overlay" id="account-modal" hidden>
+				<div class="modal" role="dialog" aria-modal="true" aria-labelledby="account-modal-title">
+					<h3 id="account-modal-title">Информация об аккаунте</h3>
+					<dl class="info-list">
+						<div class="info-row"><dt>Школа</dt><dd id="info-school"></dd></div>
+						<div class="info-row"><dt>ФИО</dt><dd id="info-name"></dd></div>
+						<div class="info-row"><dt>Класс</dt><dd id="info-class"></dd></div>
+						<div class="info-row"><dt>Роль в системе</dt><dd id="info-role"></dd></div>
+					</dl>
+					<p id="info-error" hidden></p>
+					<button class="btn btn-yes" id="account-close-btn">Закрыть</button>
+				</div>
+			</div>
 		</div>
 	
 		</template>

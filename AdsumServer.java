@@ -214,7 +214,8 @@ public class AdsumServer {
                 return;
             }
             String salt=Adsum.newSalt();
-            String hash=Adsum.hashPassword("12345678",salt);
+            String generatedPassword=Adsum.generatePassword();
+            String hash=Adsum.hashPassword(generatedPassword,salt);
             Account studentAcc=new Account(key,Role.STUDENT,salt,hash);
             studentAcc.setApproved(true);
             studentAcc.setSchool(school);
@@ -222,7 +223,8 @@ public class AdsumServer {
             Adsum.students.put(key,new Student(name,surname,patronymic,className,RegistrationStatus.APPROVED,school));
             Adsum.saveAccounts();
             Adsum.saveStudents();
-            sendJson(exchange,"{\"result\":\"ok\",\"name\":\""+esc(key)+"\"}");
+            exchange.getResponseHeaders().set("Cache-Control","no-store");
+            sendJson(exchange,"{\"result\":\"ok\",\"name\":\""+esc(key)+"\",\"password\":\""+esc(generatedPassword)+"\"}");
         }
     }
     static class SaveHandler implements HttpHandler {
@@ -420,7 +422,8 @@ public class AdsumServer {
                 return;
             }
             sendJson(exchange,"{\"result\":\"ok\",\"login\":\""+esc(account.getLogin())+"\",\"role\":\""+account.getRole()
-                +"\",\"school\":\""+esc(account.getSchool())+"\"}");
+                +"\",\"school\":\""+esc(account.getSchool())
+                +"\",\"class\":\""+esc(account.getClassName())+"\"}");
         }
     }
     static class LogoutHandler implements HttpHandler {
@@ -1294,6 +1297,10 @@ public class AdsumServer {
                     }
                     if(!Diary.cleanLine(p[1],100)) {
                         sendJson(exchange,err("комментарий: до 100 символов, одной строкой"));
+                        return;
+                    }
+                    if(account.getRole()==Role.TEACHER&&Diary.gradeOf(school,date,subject,p[2])!=null) {
+                        sendJson(exchange,403,err("учитель не может изменять выставленные оценки"));
                         return;
                     }
                     entries.add(new Diary.Entry(p[2],Integer.parseInt(p[0]),p[1].trim()));

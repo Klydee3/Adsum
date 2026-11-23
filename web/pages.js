@@ -406,7 +406,7 @@ pageScripts["reg-admin.html"]=function() {
 		const password=document.getElementById("register-password-input").value.trim(); 
 		const school=document.getElementById("register-school").value.trim();
 		if (school==="") {
-	        message.textContent="Введите название школы!";
+	        message.textContent="Выберите школу!";
 	        return;
 	    }
 		if (surname===""||name===""||patronymic==="") {
@@ -476,7 +476,7 @@ pageScripts["reg-page.html"]=function() {
 		const role=document.getElementById("role").value.trim();
 		const school=document.getElementById("register-school").value.trim();
 		if (school==="") {
-	        message.textContent="Введите название школы!";
+	        message.textContent="Выберите школу!";
 	        return;
 	    }
 		if (surname===""||name===""||patronymic==="") {
@@ -543,40 +543,124 @@ pageScripts["register-student.html"]=function() {
 	    }
 	};
 	document.getElementById("back-btn").addEventListener("click",function(){location.href="/index.html";});
-	document.getElementById("reg-student-btn").addEventListener("click",function(){
-	    const surname=document.getElementById("reg-surname").value.trim();
-	    const name=document.getElementById("reg-name").value.trim();
-	    const patronymic=document.getElementById("reg-patronymic").value.trim();
-	    const className=document.getElementById("reg-class").value.trim();
-	    if(surname===""||name===""||patronymic===""||className===""){
-	        message.textContent="Нужны фамилия, имя, отчество и класс";
-	        return;
+	const warnModal=document.getElementById("pw-warn-modal");
+	const showModal=document.getElementById("pw-show-modal");
+	const pwValue=document.getElementById("pw-show-value");
+	const pwLogin=document.getElementById("pw-show-login");
+	const pwTimer=document.getElementById("pw-show-timer");
+	const PASSWORD_VISIBLE_SECONDS=90;
+	let pwInterval=null;
+	let pending=null;
+	let busy=false;
+	function closePasswordWindow(){
+	    clearInterval(pwInterval);
+	    pwInterval=null;
+	    pwValue.textContent="";
+	    pwLogin.textContent="";
+	    showModal.hidden=true;
+	}
+	function openPasswordWindow(login,password){
+	    pwLogin.textContent=login;
+	    pwValue.textContent=password;
+	    let left=PASSWORD_VISIBLE_SECONDS;
+	    function render(){
+	        pwTimer.textContent=Math.floor(left/60)+":"+String(left%60).padStart(2,"0");
 	    }
+	    render();
+	    showModal.hidden=false;
+	    clearInterval(pwInterval);
+	    pwInterval=setInterval(function(){
+	        left--;
+	        if(left<=0){
+	            closePasswordWindow();
+	            message.textContent="Время показа пароля истекло";
+	            return;
+	        }
+	        render();
+	    },1000);
+	}
+	function createStudent(){
+	    if(busy||pending===null){return;}
+	    busy=true;
+	    const p=pending;
 	    fetch("/api/register",{
 	        method:"POST",
 	        headers:{"Content-Type":"application/x-www-form-urlencoded","Authorization":"Bearer "+localStorage.getItem("token")},
-	        body:"surname="+encodeURIComponent(surname)+
-			"&name="+encodeURIComponent(name)+
-			"&patronymic="+encodeURIComponent(patronymic)+
-			"&className="+encodeURIComponent(className)+
-			"&school="+encodeURIComponent(document.getElementById("reg-school").value.trim())
+	        body:"surname="+encodeURIComponent(p.surname)+
+			"&name="+encodeURIComponent(p.name)+
+			"&patronymic="+encodeURIComponent(p.patronymic)+
+			"&className="+encodeURIComponent(p.className)+
+			"&school="+encodeURIComponent(p.school)
 	    })
 	    .then(function(r){return r.json();})
 	    .then(function(data){
+	        busy=false;
+	        pending=null;
 	        if(data.result==="ok"){
 	            message.textContent="Ученик зарегистрирован: "+data.name;
 	            document.getElementById("reg-surname").value="";
 	            document.getElementById("reg-name").value="";
 	            document.getElementById("reg-patronymic").value="";
 	            document.getElementById("reg-class").value="";
+	            openPasswordWindow(data.name,data.password);
 	        }else{
 	            message.textContent="Ошибка: "+data.message;
 	        }
 	    })
-	    .catch(function(){message.textContent="Сервер недоступен";});
+	    .catch(function(){
+	        busy=false;
+	        pending=null;
+	        message.textContent="Сервер недоступен";
+	    });
+	}
+	document.getElementById("reg-student-btn").addEventListener("click",function(){
+	    const surname=document.getElementById("reg-surname").value.trim();
+	    const name=document.getElementById("reg-name").value.trim();
+	    const patronymic=document.getElementById("reg-patronymic").value.trim();
+	    const className=document.getElementById("reg-class").value.trim();
+	    const school=document.getElementById("reg-school").value.trim();
+	    if(surname===""||name===""||patronymic===""||className===""){
+	        message.textContent="Нужны фамилия, имя, отчество и класс";
+	        return;
+	    }
+	    if(localStorage.getItem("role")==="MAIN_DEVELOPER"&&school===""){
+	        message.textContent="Выберите школу";
+	        return;
+	    }
+	    pending={surname:surname,name:name,patronymic:patronymic,className:className,school:school};
+	    warnModal.hidden=false;
+	});
+	document.getElementById("pw-warn-cancel-btn").addEventListener("click",function(){
+	    pending=null;
+	    warnModal.hidden=true;
+	});
+	document.getElementById("pw-warn-ok-btn").addEventListener("click",function(){
+	    warnModal.hidden=true;
+	    createStudent();
+	});
+	document.getElementById("pw-close-btn").addEventListener("click",closePasswordWindow);
+	document.getElementById("pw-copy-btn").addEventListener("click",function(){
+	    const text=pwValue.textContent;
+	    if(text===""){return;}
+	    if(navigator.clipboard&&navigator.clipboard.writeText){
+	        navigator.clipboard.writeText(text).then(function(){
+	            message.textContent="Пароль скопирован";
+	        }).catch(function(){
+	            message.textContent="Не удалось скопировать — запишите вручную";
+	        });
+	    }else{
+	        message.textContent="Не удалось скопировать — запишите вручную";
+	    }
+	});
+	document.addEventListener("keydown",function(e){
+	    if(e.key==="Escape"&&!warnModal.hidden){
+	        pending=null;
+	        warnModal.hidden=true;
+	    }
 	});
 	if(localStorage.getItem("role")==="MAIN_DEVELOPER"){
-	    document.getElementById("reg-school").style.display="";
+	    const regSchool=document.getElementById("reg-school");
+	    (regSchool.closest(".sp")||regSchool).style.display="";
 	    fetch("/api/schools")
 	    .then(function(r){return r.json();})
 	    .then(function(d){
@@ -832,7 +916,8 @@ pageScripts["menu.html"]=function() {
 
 // ===== settings.js (settings.html) =====
 pageScripts["settings.html"]=function() {
-	if(!localStorage.getItem("token")){
+	const token=localStorage.getItem("token");
+	if(!token){
 	    location.href="/index.html";
 	}
 	const messageBox=document.getElementById("message");
@@ -855,6 +940,54 @@ pageScripts["settings.html"]=function() {
 	document.getElementById("theme-dark").addEventListener("click",function(){setTheme("dark");syncTheme();});
 	document.getElementById("theme-light").addEventListener("click",function(){setTheme("light");syncTheme();});
 	syncTheme();
+	const ROLE_NAMES={STUDENT:"Ученик",TEACHER:"Учитель",ADMIN:"Администрация",CAFETERIA:"Столовая",MAIN_DEVELOPER:"Главный разработчик"};
+	const modal=document.getElementById("account-modal");
+	const infoFields={
+	    school:document.getElementById("info-school"),
+	    name:document.getElementById("info-name"),
+	    "class":document.getElementById("info-class"),
+	    role:document.getElementById("info-role")
+	};
+	const infoError=document.getElementById("info-error");
+	const closeBtn=document.getElementById("account-close-btn");
+	let lastFocus=null;
+	function dash(v) {return v?v:"—";}
+	function fillInfo(d) {
+	    infoFields.school.textContent=dash(d.school);
+	    infoFields.name.textContent=dash(d.login);
+	    infoFields["class"].textContent=dash(d["class"]);
+	    infoFields.role.textContent=ROLE_NAMES[d.role]||dash(d.role);
+	}
+	function closeInfo() {
+	    modal.hidden=true;
+	    if (lastFocus) {lastFocus.focus();}
+	}
+	function openInfo() {
+	    lastFocus=document.activeElement;
+	    infoError.hidden=true;
+	    fillInfo({school:"…",login:"…",class:"…",role:"…"});
+	    modal.hidden=false;
+	    closeBtn.focus();
+	    fetch("/api/me",{headers:{"Authorization":"Bearer "+token}})
+	    .then(function(r) {return r.json();})
+	    .then(function(d) {
+	        if (d.result!=="ok") {
+	            throw new Error(d.message||"error");
+	        }
+	        fillInfo(d);
+	    })
+	    .catch(function() {
+	        fillInfo({school:localStorage.getItem("school"),login:localStorage.getItem("login"),class:"",role:localStorage.getItem("role")});
+	        infoError.textContent="Не удалось обновить данные с сервера";
+	        infoError.hidden=false;
+	    });
+	}
+	document.getElementById("account-info-btn").addEventListener("click",openInfo);
+	closeBtn.addEventListener("click",closeInfo);
+	modal.addEventListener("click",function(e) {if (e.target===modal) {closeInfo();}});
+	document.addEventListener("keydown",function(e) {
+	    if (e.key==="Escape"&&!modal.hidden) {closeInfo();}
+	});
 	document.getElementById("change-pass-btn").addEventListener("click",function(){
 		location.href="/change.html";
 	});
@@ -1300,6 +1433,11 @@ pageScripts["journal.html"]=function() {
 	    comment.maxLength=100;
 	    comment.placeholder="Комментарий";
 	    comment.value=s.comment;
+	    if(role==="TEACHER"&&s.mark!==0) {
+	        mark.disabled=true;
+	        comment.disabled=true;
+	        comment.title="Изменять выставленные оценки может только администрация";
+	    }
 	    row.appendChild(info);
 	    row.appendChild(mark);
 	    row.appendChild(comment);
@@ -1329,6 +1467,7 @@ pageScripts["journal.html"]=function() {
 	            initial.set(s.login,s);
 	            renderRow(s);
 	        });
+	        document.getElementById("journal-lock-note").hidden=role!=="TEACHER";
 	        journalBox.style.display="";
 	    })
 	    .catch(function() {message.textContent="Ошибка соединения";});
@@ -1407,6 +1546,7 @@ const pageName=location.pathname.split("/").pop()||"index.html";
     document.title=tpl.getAttribute("data-title");
     app.appendChild(tpl.content.cloneNode(true));
     if (window.enhanceDatePickers) {window.enhanceDatePickers(app);}
+    if (window.enhancePickers) {window.enhancePickers(app);}
 })();
 if(pageScripts[pageName]) {
     pageScripts[pageName]();

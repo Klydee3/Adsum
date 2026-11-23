@@ -180,6 +180,29 @@ public class Adsum {
 		new SecureRandom().nextBytes(salt);
 		return Base64.getEncoder().encodeToString(salt);
 	}
+	static String generatePassword() {
+		String upper="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		String lower="abcdefghijklmnopqrstuvwxyz";
+		String digits="0123456789";
+		String all=upper+lower+digits;
+		SecureRandom rnd=new SecureRandom();
+		char[] chars=new char[10];
+		// гарантируем хотя бы по одному символу каждого вида
+		chars[0]=upper.charAt(rnd.nextInt(upper.length()));
+		chars[1]=lower.charAt(rnd.nextInt(lower.length()));
+		chars[2]=digits.charAt(rnd.nextInt(digits.length()));
+		for(int i=3;i<chars.length;i++) {
+			chars[i]=all.charAt(rnd.nextInt(all.length()));
+		}
+		// перемешиваем (Фишер—Йейтс)
+		for(int i=chars.length-1;i>0;i--) {
+			int j=rnd.nextInt(i+1);
+			char t=chars[i];
+			chars[i]=chars[j];
+			chars[j]=t;
+		}
+		return new String(chars);
+	}
 	static String hashPassword(String password, String salt) {
 		try {
 			PBEKeySpec spec=new PBEKeySpec(password.toCharArray(),

@@ -121,6 +121,205 @@ applyTheme(getTheme());
     };
 })();
 
+// ===== Свой выбор из списка (школа, роль, предмет) в стиле выбора даты =====
+(function() {
+    const svg=function(path,w) {
+        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(w||2)+'" stroke-linecap="round" stroke-linejoin="round">'+path+'</svg>';
+    };
+    const ICONS={
+        school:svg('<path d="M3 10l9-5 9 5"/><path d="M5 10v8M19 10v8M9 18v-5M15 18v-5M3 20h18"/>'),
+        role:svg('<circle cx="12" cy="8" r="4"/><path d="M4.5 20c.8-3.6 3.8-5.5 7.5-5.5s6.7 1.9 7.5 5.5"/>'),
+        subject:svg('<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/>'),
+        "class":svg('<circle cx="9" cy="8" r="3.2"/><path d="M2.8 19c.6-3 3-4.6 6.2-4.6s5.6 1.6 6.2 4.6"/><path d="M16 5.2a3.2 3.2 0 0 1 0 5.6M18 14.6c1.8.6 3 2 3.4 4.4"/>')
+    };
+    const ICON_CHEV='<svg class="sp-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>';
+    const ICON_CHECK=svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>',2.6);
+    const SEARCH_FROM=7;
+    const pickers=[];
+    const norm=function(v) {return (v||"").toLowerCase().replace(/ё/g,"е");};
+
+    function build(el) {
+        const isSelect=el.tagName==="SELECT";
+        const datalist=isSelect?null:document.getElementById(el.getAttribute("list")||"");
+        const allowCustom=el.dataset.custom==="true";
+        const placeholder=el.dataset.placeholder||"Выберите";
+        const maxLen=+el.getAttribute("maxlength")||0;
+        const labelEl=el.id?document.querySelector('label[for="'+el.id+'"]'):null;
+
+        const wrap=document.createElement("div");
+        wrap.className="sp";
+        if (el.style.display==="none") {
+            wrap.style.display="none";
+            el.style.display="";
+        }
+        el.parentNode.insertBefore(wrap,el);
+        wrap.appendChild(el);
+        el.tabIndex=-1;
+        el.removeAttribute("list");
+        el.setAttribute("aria-hidden","true");
+
+        const trigger=document.createElement("button");
+        trigger.type="button";
+        trigger.className="sp-trigger";
+        trigger.setAttribute("aria-haspopup","listbox");
+        trigger.setAttribute("aria-expanded","false");
+        trigger.setAttribute("aria-label",labelEl?labelEl.textContent.replace(/:$/,""):placeholder);
+        trigger.innerHTML=(ICONS[el.dataset.icon]||"")+'<span class="sp-label"></span>'+ICON_CHEV;
+        const label=trigger.querySelector(".sp-label");
+
+        const pop=document.createElement("div");
+        pop.className="sp-pop";
+        const search=document.createElement("input");
+        search.type="text";
+        search.className="sp-search";
+        search.autocomplete="off";
+        search.hidden=true;
+        const list=document.createElement("div");
+        list.className="sp-list";
+        list.setAttribute("role","listbox");
+        pop.appendChild(search);
+        pop.appendChild(list);
+        wrap.appendChild(trigger);
+        wrap.appendChild(pop);
+
+        function options() {
+            if (isSelect) {
+                return Array.prototype.map.call(el.options,function(o) {return {value:o.value,label:o.textContent};});
+            }
+            return datalist?Array.prototype.map.call(datalist.options,function(o) {return {value:o.value,label:o.value};}):[];
+        }
+        function refreshLabel() {
+            let text="";
+            if (isSelect) {
+                const o=el.options[el.selectedIndex];
+                text=o?o.textContent:"";
+            } else {
+                text=el.value;
+            }
+            label.textContent=text||placeholder;
+            label.classList.toggle("placeholder",text==="");
+            trigger.title=text;
+        }
+        function addRow(cls,value,text,selected) {
+            const b=document.createElement("button");
+            b.type="button";
+            b.className="sp-opt"+cls+(selected?" selected":"");
+            b.setAttribute("role","option");
+            b.setAttribute("aria-selected",selected?"true":"false");
+            b.dataset.value=value;
+            const t=document.createElement("span");
+            t.textContent=text;
+            b.appendChild(t);
+            if (selected) {b.insertAdjacentHTML("beforeend",ICON_CHECK);}
+            list.appendChild(b);
+        }
+        function renderList() {
+            const typed=search.value.trim();
+            const q=norm(typed);
+            const all=options();
+            const current=el.value;
+            list.textContent="";
+            all.forEach(function(o) {
+                if (q!==""&&norm(o.label).indexOf(q)===-1) {return;}
+                addRow("",o.value,o.label,o.value===current);
+            });
+            if (allowCustom&&typed!==""&&!all.some(function(o) {return norm(o.label)===q;})) {
+                addRow(" add",maxLen?typed.slice(0,maxLen):typed,"Добавить «"+typed+"»",false);
+            }
+            if (list.children.length===0) {
+                const empty=document.createElement("div");
+                empty.className="sp-empty";
+                empty.textContent=all.length===0?"Список пуст":"Ничего не найдено";
+                list.appendChild(empty);
+            }
+        }
+        function open() {
+            pickers.forEach(function(p) {if (p!==api) {p.close();}});
+            search.value="";
+            const withSearch=allowCustom||options().length>=SEARCH_FROM;
+            search.hidden=!withSearch;
+            search.placeholder=allowCustom?"Найти или ввести свой вариант":"Поиск";
+            renderList();
+            wrap.classList.add("open");
+            trigger.setAttribute("aria-expanded","true");
+            const sel=list.querySelector(".selected");
+            if (sel) {list.scrollTop=sel.offsetTop-(list.clientHeight-sel.offsetHeight)/2;}
+            if (withSearch&&window.matchMedia&&window.matchMedia("(hover: hover)").matches) {
+                search.focus({preventScroll:true});
+            }
+        }
+        function close() {
+            wrap.classList.remove("open");
+            trigger.setAttribute("aria-expanded","false");
+        }
+        function choose(value) {
+            const changed=el.value!==value;
+            el.value=value;
+            if (changed) {
+                el.dispatchEvent(new Event("input",{bubbles:true}));
+                el.dispatchEvent(new Event("change",{bubbles:true}));
+            }
+            close();
+            trigger.focus({preventScroll:true});
+        }
+
+        trigger.addEventListener("click",function() {
+            wrap.classList.contains("open")?close():open();
+        });
+        list.addEventListener("click",function(e) {
+            const row=e.target.closest(".sp-opt");
+            if (row) {choose(row.dataset.value);}
+        });
+        search.addEventListener("input",renderList);
+        search.addEventListener("keydown",function(e) {
+            if (e.key==="Enter") {
+                e.preventDefault();
+                const first=list.querySelector(".sp-opt");
+                if (first) {choose(first.dataset.value);}
+            }
+        });
+        pop.addEventListener("keydown",function(e) {
+            if (e.key!=="ArrowDown"&&e.key!=="ArrowUp") {return;}
+            const items=Array.prototype.slice.call(pop.querySelectorAll(".sp-search:not([hidden]),.sp-opt"));
+            const i=items.indexOf(document.activeElement);
+            const next=e.key==="ArrowDown"?Math.min(items.length-1,i+1):Math.max(0,i-1);
+            if (items[next]) {
+                items[next].focus();
+                e.preventDefault();
+            }
+        });
+        document.addEventListener("click",function(e) {if (!wrap.contains(e.target)) {close();}});
+        document.addEventListener("keydown",function(e) {
+            if (e.key==="Escape"&&wrap.classList.contains("open")) {
+                close();
+                trigger.focus({preventScroll:true});
+            }
+        });
+
+        const desc=Object.getOwnPropertyDescriptor(isSelect?HTMLSelectElement.prototype:HTMLInputElement.prototype,"value");
+        Object.defineProperty(el,"value",{
+            get:function() {return desc.get.call(el);},
+            set:function(v) {desc.set.call(el,v);refreshLabel();},
+            configurable:true
+        });
+        const source=isSelect?el:datalist;
+        if (source&&window.MutationObserver) {
+            new MutationObserver(function() {
+                refreshLabel();
+                if (wrap.classList.contains("open")) {renderList();}
+            }).observe(source,{childList:true,subtree:true,characterData:true});
+        }
+        refreshLabel();
+        const api={close:close};
+        pickers.push(api);
+    }
+    window.enhancePickers=function(root) {
+        (root||document).querySelectorAll("select[data-picker],input[data-picker]").forEach(function(el) {
+            if (!el.closest(".sp")) {build(el);}
+        });
+    };
+})();
+
 function two(n) {return n<10?"0"+n:""+n;}
 function clearSession() {
     ["token","role","school","login"].forEach(function(k) {localStorage.removeItem(k);});

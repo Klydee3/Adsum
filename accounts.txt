@@ -1,12 +1,13 @@
 Лебедев Матвей:STUDENT:tbPWIENt+lKC1ocx2PLxJA==:iLkyNMH4OCbxAMMMufc+6Cf/rHbsY3JRhh8ZL01fZcs=:APPROVED:9:ГУО «Новосамотевичская средняя школа Костюковичского района»
+Шуниборова Татьяна Евгеньевна:ADMIN:/PAZmv9FNFknA9sCjnRL2A==:3deY++KgR4aLaQyCDnqKrSM4j5vd6QK1vhHBYK3BAAU=:APPROVED::ГУО «Новосамотевичская средняя школа Костюковичского района»
+Смолькин Илья Сергеевич:STUDENT:hbIJPROD1P8KEVO4HLpY2Q==:4tEBuKNLzeaUPI4J2iSR1CPqVVk6qIXuj3OZZW0aGw8=:APPROVED:10:ГУО «Новосамотевичская средняя школа Костюковичского района»
+Сальников Владимир Евгеньевич:TEACHER:epT4CXfaN49+2lA7ceeHzw==:uLtJ+FTL+ZQ/6zcNNUuKOzlIc83+p4a5mm/BwuQVa7o=:APPROVED:9:ГУО «Новосамотевичская средняя школа Костюковичского района»
+admin:ADMIN:PTDJlMRLRoXT13djCgpa/Q==:0QLDCqslf0koQhGg2J0fNrvTL1Gq0mWbiFTVagGxFGw=:APPROVED::ГУО «Новосамотевичская средняя школа Костюковичского района»
 Михалева Оксана Михайловна:ADMIN:06wvzgZANVdfG+LoFyTgLQ==:T8/wciaXuhIxcnoN0X73YK6KfQ4vTg/iTBELs3tpOp4=:APPROVED::ГУО «Новосамотевичская средняя школа Костюковичского района»
 cafe:CAFETERIA:kFnx3Rz1NGCBvw3oWcM3pA==:aGxo9Ozv68I9EESm4U/arzEjTvY7ot3PVxB/UCviokQ=:APPROVED::ГУО «Новосамотевичская средняя школа Костюковичского района»
 Луковский Арсений:STUDENT:FKQ2J837KXQp1qMucWeYyA==:lml8KIaRjT3wOSWHsONo3gi/aWbca1UIqsHm9yAzg4s=:APPROVED:10:ГУО «Новосамотевичская средняя школа Костюковичского района»
 Запрутин Мартын Григорьевич:STUDENT:E3ea3KWwF98bc/gW8LLc4Q==:BrgwvjFCn3SlV7VazwvjHPeblFum0unpMVOV3QSOKiU=:APPROVED:10:ГУО «Новосамотевичская средняя школа Костюковичского района»
-Шуниборова Татьяна Евгеньевна:ADMIN:/PAZmv9FNFknA9sCjnRL2A==:3deY++KgR4aLaQyCDnqKrSM4j5vd6QK1vhHBYK3BAAU=:APPROVED::ГУО «Новосамотевичская средняя школа Костюковичского района»
-Смолькин Илья Сергеевич:STUDENT:hbIJPROD1P8KEVO4HLpY2Q==:4tEBuKNLzeaUPI4J2iSR1CPqVVk6qIXuj3OZZW0aGw8=:APPROVED:10:ГУО «Новосамотевичская средняя школа Костюковичского района»
-maindev:MAIN_DEVELOPER:LMCCugUE7eDPmvTY8SNt8w==:klYgXRZ1tay9eRI4gJ8SAcEW1Q7J50a8aFXb0nPQL1U=:APPROVED::
+maindev:MAIN_DEVELOPER:znvbCkB0wMuUT2FcITiNJQ==:6PaGr21Lnqp2q+o1YFdP5byZf5EkoHgaGqALq46Hv+o=:APPROVED::
 Парфенова Екатерина Сергеевна:TEACHER:CfWINoiC/pXh8po5Jl51MQ==:zxJrYcSuKRm0kdgqmkQkbECLNO7nkWJIjky8j61RGQ4=:APPROVED:10:ГУО «Новосамотевичская средняя школа Костюковичского района»
-Сальников Владимир Евгеньевич:TEACHER:epT4CXfaN49+2lA7ceeHzw==:uLtJ+FTL+ZQ/6zcNNUuKOzlIc83+p4a5mm/BwuQVa7o=:APPROVED:9:ГУО «Новосамотевичская средняя школа Костюковичского района»
-admin:ADMIN:PTDJlMRLRoXT13djCgpa/Q==:0QLDCqslf0koQhGg2J0fNrvTL1Gq0mWbiFTVagGxFGw=:APPROVED::ГУО «Новосамотевичская средняя школа Костюковичского района»
+Асипенко Вадим Батькович:STUDENT:z77heqUNP7Kf3ZCKlJnAIA==:5dpgVJUBHCd/hsAdIhWW4U7OGFTgBFR7UbpSRBUsnUc=:APPROVED:9:ГУО «Новосамотевичская средняя школа Костюковичского района»
 Сичкаренко Василиса:STUDENT:Ghs8MzzZglyWNsti45GikQ==:Ta8X7o1eZzjpJ5G+b+nBRSc8EYl72SXJSUYKN2t5qcA=:APPROVED:10:ГУО «Новосамотевичская средняя школа Костюковичского района»
