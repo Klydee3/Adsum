@@ -80,7 +80,7 @@ public class FileStorage {
                 if(line.trim().isEmpty()) {
                     continue;
                 }
-                String[] parts=line.split(":",7);
+                String[] parts=line.split(":",8);
                 if (parts.length<4) {
                     continue;
                 }
@@ -93,6 +93,9 @@ public class FileStorage {
                         acc.setSchool(parts[6].trim());
                     } else {
                         acc.setSchool(parts.length>5?parts[5].trim():st.replaceFirst("^(APPROVED|PENDING)","").trim());
+                    }
+                    if(parts.length>=8&&!parts[7].trim().isEmpty()) {
+                        acc.setSubjects(java.util.Arrays.asList(parts[7].split("\\|")));
                     }
                     result.add(acc);
                 } catch (IllegalArgumentException e) {
@@ -113,7 +116,8 @@ public class FileStorage {
               .append(":").append(a.getPasswordHash())
               .append(":").append(a.isApproved()?"APPROVED":"PENDING")
               .append(":").append(a.getClassName())
-              .append(":").append(a.getSchool()).append("\n");
+              .append(":").append(a.getSchool())
+              .append(":").append(String.join("|",a.getSubjects())).append("\n");
         }
         try {
             writeAtomic(fileName,sb.toString());

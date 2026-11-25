@@ -226,15 +226,42 @@ pageScripts["assign.html"]=function() {
 	                })
 	                .catch(function(){document.getElementById("message").textContent="Сервер недоступен";});
 	            });
+	            const subjInput=document.createElement("input");
+	            subjInput.className="name-input";
+	            subjInput.placeholder="Предметы через запятую";
+	            subjInput.maxLength=500;
+	            subjInput.value=(t.subjects||[]).join(", ");
+	            const subjBtn=document.createElement("button");
+	            subjBtn.className="btn";
+	            subjBtn.textContent="Сохранить предметы";
+	            subjBtn.addEventListener("click",function(){
+	                fetch("/api/assign-subjects",{
+	                    method:"POST",
+	                    headers:{"Content-Type":"application/x-www-form-urlencoded","Authorization":"Bearer "+localStorage.getItem("token")},
+	                    body:"teacher="+encodeURIComponent(t.login)+"&subjects="+encodeURIComponent(subjInput.value)
+	                })
+	                .then(function(r){return r.json();})
+	                .then(function(d){
+	                    if(d.result==="ok"){
+	                        subjInput.value=d.subjects.join(", ");
+	                        document.getElementById("message").textContent="Предметы сохранены.";
+	                    }else{
+	                        document.getElementById("message").textContent="Ошибка: "+d.message;
+	                    }
+	                })
+	                .catch(function(){document.getElementById("message").textContent="Сервер недоступен";});
+	            });
 	            const title=document.createElement("div");
 	            title.className="card-title";
 	            title.textContent=t.login;
 	            const actions=document.createElement("div");
 	            actions.className="card-actions";
 	            actions.appendChild(btn);
+	            actions.appendChild(subjBtn);
 	            actions.appendChild(delBtn);
 	            row.appendChild(title);
 	            row.appendChild(input);
+	            row.appendChild(subjInput);
 	            row.appendChild(actions);
 	            box.appendChild(row);
 	        });
@@ -1361,6 +1388,10 @@ pageScripts["journal.html"]=function() {
 	const homeworkInput=document.getElementById("journal-homework");
 	const listBox=document.getElementById("journal-list");
 	const journalBox=document.getElementById("journal-box");
+	if(role==="TEACHER") {
+	    subjectInput.dataset.custom="false";
+	    subjectInput.placeholder="Выберите предмет";
+	}
 	let current=null;
 	let initial=new Map();
 	function oneLine(v) {
@@ -1401,7 +1432,9 @@ pageScripts["journal.html"]=function() {
 	            o.value=s;
 	            list.appendChild(o);
 	        });
-	        if(d.classes.length===0) {
+	        if(role==="TEACHER"&&d.subjects.length===0) {
+	            message.textContent="Администрация школы ещё не назначила вам предметы";
+	        } else if(d.classes.length===0) {
 	            message.textContent="В школе пока нет учеников";
 	        }
 	    })
@@ -1445,6 +1478,10 @@ pageScripts["journal.html"]=function() {
 	}
 	function showClass() {
 	    const subject=oneLine(subjectInput.value);
+	    if(role==="TEACHER"&&subject!==""&&!Array.prototype.some.call(document.getElementById("subjects").options,function(o) {return o.value===subject;})) {
+	        message.textContent="Можно выбрать только предмет, назначенный вам администрацией";
+	        return;
+	    }
 	    if(classSelect.value===""||subject===""||dateInput.value==="") {
 	        message.textContent="Выберите класс, предмет и дату";
 	        return;

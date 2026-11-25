@@ -141,7 +141,7 @@ applyTheme(getTheme());
     function build(el) {
         const isSelect=el.tagName==="SELECT";
         const datalist=isSelect?null:document.getElementById(el.getAttribute("list")||"");
-        const allowCustom=el.dataset.custom==="true";
+        const isCustom=function() {return el.dataset.custom==="true";};
         const placeholder=el.dataset.placeholder||"Выберите";
         const maxLen=+el.getAttribute("maxlength")||0;
         const labelEl=el.id?document.querySelector('label[for="'+el.id+'"]'):null;
@@ -223,7 +223,7 @@ applyTheme(getTheme());
                 if (q!==""&&norm(o.label).indexOf(q)===-1) {return;}
                 addRow("",o.value,o.label,o.value===current);
             });
-            if (allowCustom&&typed!==""&&!all.some(function(o) {return norm(o.label)===q;})) {
+            if (isCustom()&&typed!==""&&!all.some(function(o) {return norm(o.label)===q;})) {
                 addRow(" add",maxLen?typed.slice(0,maxLen):typed,"Добавить «"+typed+"»",false);
             }
             if (list.children.length===0) {
@@ -236,9 +236,9 @@ applyTheme(getTheme());
         function open() {
             pickers.forEach(function(p) {if (p!==api) {p.close();}});
             search.value="";
-            const withSearch=allowCustom||options().length>=SEARCH_FROM;
+            const withSearch=isCustom()||options().length>=SEARCH_FROM;
             search.hidden=!withSearch;
-            search.placeholder=allowCustom?"Найти или ввести свой вариант":"Поиск";
+            search.placeholder=isCustom()?"Найти или ввести свой вариант":"Поиск";
             renderList();
             wrap.classList.add("open");
             trigger.setAttribute("aria-expanded","true");
@@ -387,7 +387,7 @@ function clearSession() {
 			links+='<a href="/student-list.html">Список учеников</a>';
 			links+='<a href="/register-student.html">Регистрация ученика</a>';
 			links+='<a href="/applications.html">Заявки на аккаунты</a>';
-			links+='<a href="/assign.html">Классные руководители</a>';
+			links+='<a href="/assign.html">Учителя: классы и предметы</a>';
 			links+='<a href="/reg-admin.html">Зарегистрировать администратора</a>';
 			links+='<a href="/summary.html">Утренняя сводка</a>';
 			links+='<a href="/set-school-menu.html">Установить школьное меню</a>';
@@ -396,7 +396,7 @@ function clearSession() {
 			links+='<a href="/student-list.html">Список учеников</a>';
 			links+='<a href="/register-student.html">Регистрация ученика</a>';
 			links+='<a href="/applications.html">Заявки на аккаунты</a>';
-			links+='<a href="/assign.html">Классные руководители</a>';
+			links+='<a href="/assign.html">Учителя: классы и предметы</a>';
 		}
         if (role==="ADMIN"||role==="TEACHER"||role==="CAFETERIA") {
             links+='<a href="/summary.html">Утренняя сводка</a>';

@@ -795,7 +795,8 @@ public class AdsumServer {
                 }
                 first=false;
                 sb.append("{\"login\":\"").append(esc(a.getLogin())).append("\",");
-                sb.append("\"class\":\"").append(esc(cls==null?"":cls)).append("\"}");
+                sb.append("\"class\":\"").append(esc(cls==null?"":cls)).append("\",");
+                sb.append("\"subjects\":").append(stringArray(a.getSubjects())).append("}");
             }
             sb.append("]}");
             sendJson(exchange,sb.toString());
@@ -840,6 +841,56 @@ public class AdsumServer {
             }
             Adsum.saveClassTeachers();
             sendJson(exchange,"{\"result\":\"ok\"}");
+        }
+    }
+    static class AssignSubjectsHandler implements HttpHandler {
+        public void handle(HttpExchange exchange) throws IOException {
+            if (!requirePost(exchange)) {
+                return;
+            }
+            Account account=requireAuth(exchange);
+            if(account==null) {
+                return;
+            }
+            if(!isStaff(account)) {
+                sendJson(exchange,403,err("нет доступа"));
+                return;
+            }
+            Map<String,String> params=parseBody(exchange);
+            String teacher=param(params,"teacher");
+            Account t=Adsum.accounts.get(teacher);
+            if(t==null||t.getRole()!=Role.TEACHER) {
+                sendJson(exchange,err("аккаунт не является учителем"));
+                return;
+            }
+            if(!canManage(account,t.getSchool())) {
+                sendJson(exchange,403,err("учитель из другой школы"));
+                return;
+            }
+            java.util.List<String> list=new ArrayList<>();
+            String raw=params.get("subjects");
+            if(raw!=null) {
+                for(String part:raw.split(",")) {
+                    String s=part.trim();
+                    if(s.isEmpty()) {
+                        continue;
+                    }
+                    if(!cleanSubject(s)) {
+                        sendJson(exchange,err("некорректный предмет: «"+s+"» (до 60 символов, без символов : ; |)"));
+                        return;
+                    }
+                    if(!list.contains(s)) {
+                        list.add(s);
+                    }
+                }
+            }
+            if(list.size()>20) {
+                sendJson(exchange,err("не больше 20 предметов на учителя"));
+                return;
+            }
+            t.setSubjects(list);
+            Adsum.saveAccounts();
+            sendJson(exchange,"{\"result\":\"ok\",\"subjects\":"+stringArray(t.getSubjects())+"}");
         }
     }
     static class RegAdminHandler implements HttpHandler {
@@ -1100,6 +1151,21 @@ public class AdsumServer {
                 +"\",\"complexes\":"+complexesJson(Menu.menuFor(date,school))+"}");
         }
     }
+    static boolean cleanSubject(String v) {
+        return v!=null&&!v.isEmpty()&&v.length()<=60&&Diary.cleanLine(v,60)
+            &&v.indexOf(':')<0&&v.indexOf('|')<0&&v.indexOf(';')<0;
+    }
+    static boolean canGradeSubject(Account a,String subject) {
+        return a.getRole()!=Role.TEACHER||a.teaches(subject);
+    }
+    static String subjectDenied(Account a,String subject) {
+        if(canGradeSubject(a,subject)) {
+            return null;
+        }
+        return a.getSubjects().isEmpty()
+            ?"администрация школы ещё не назначила вам предметы"
+            :"вы не ведёте предмет «"+subject+"»";
+    }
     static boolean isJournalStaff(Account a) {
         return a.getRole()==Role.TEACHER||isStaff(a);
     }
@@ -1207,7 +1273,8 @@ public class AdsumServer {
                 }
             }
             sendJson(exchange,"{\"result\":\"ok\",\"classes\":"+stringArray(classes)
-                +",\"subjects\":"+stringArray(Diary.subjectsOf(school))+"}");
+                +",\"subjects\":"+stringArray(account.getRole()==Role.TEACHER
+                    ?account.getSubjects():Diary.subjectsOf(school))+"}");
         }
     }
     static class JournalHandler implements HttpHandler {
@@ -1228,6 +1295,11 @@ public class AdsumServer {
             String error=journalParamError(school,className,subject,date);
             if(error!=null) {
                 sendJson(exchange,err(error));
+                return;
+            }
+            String denied=subjectDenied(account,subject);
+            if(denied!=null) {
+                sendJson(exchange,403,err(denied));
                 return;
             }
             java.util.List<Map.Entry<String,Student>> roster=classRoster(school,className);
@@ -1267,6 +1339,11 @@ public class AdsumServer {
             String error=journalParamError(school,className,subject,date);
             if(error!=null) {
                 sendJson(exchange,err(error));
+                return;
+            }
+            String denied=subjectDenied(account,subject);
+            if(denied!=null) {
+                sendJson(exchange,403,err(denied));
                 return;
             }
             String text=param(params,"homework");
@@ -1349,6 +1426,7 @@ public class AdsumServer {
         route(server,"/api/approve-account",new ApproveAccountHandler());
         route(server,"/api/teachers-list",new TeachersListHandler());
         route(server,"/api/assign-class",new AssignClassHandler());
+        route(server,"/api/assign-subjects",new AssignSubjectsHandler());
         route(server,"/api/reg-admin",new RegAdminHandler());
         route(server,"/api/complexes",new ComplexesHandler());
         route(server,"/api/complex-save",new ComplexSaveHandler());
